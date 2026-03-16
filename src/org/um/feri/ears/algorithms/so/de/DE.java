@@ -469,8 +469,9 @@ public class DE extends NumberAlgorithm {
              * pold[i] = new IndividualSA(pnew[i]); pnew[i] = new
              * IndividualSA(swap); }
              */
+            if(displayData)
+                System.out.println(task.getNumberOfEvaluations() + " " + best);
             task.incrementNumberOfIterations();
-
         }
         return best;
     }
