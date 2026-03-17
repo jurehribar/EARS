@@ -80,7 +80,7 @@ public class ES1pNsAlgorithm extends NumberAlgorithm {
                 if (task.problem.isFirstBetter(ii, one)) {
                     succ++; // for 1/5 rule
                     one = ii;
-                    if (debug)
+                    if (displayData)
                         System.out.println(task.getNumberOfEvaluations() + " " + one);
                 }
                 if (task.isStopCriterion()) break;
