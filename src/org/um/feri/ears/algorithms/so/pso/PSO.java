@@ -81,6 +81,8 @@ public class PSO extends NumberAlgorithm {
                 if (task.problem.isFirstBetter(population.get(i), gBest)) gBest = new PsoSolution(population.get(i));
                 if (task.isStopCriterion()) break;
             }
+            if(displayData)
+                System.out.println(task.getNumberOfEvaluations() + " " + gBest);
             task.incrementNumberOfIterations();
         }
         return gBest;

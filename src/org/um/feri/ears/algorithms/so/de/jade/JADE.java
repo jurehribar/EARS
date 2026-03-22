@@ -188,6 +188,8 @@ public class JADE extends NumberAlgorithm {
                     muF = 0.1;
             }
             // System.out.println("\nmuCR:" + muCR + " " + " muF:" +muF);
+            if(displayData)
+                System.out.println(task.getNumberOfEvaluations() + " " + g);
             task.incrementNumberOfIterations();
         }
         return g;

@@ -26,10 +26,10 @@ import static java.lang.Math.*;
  */
 public class ShiftedCoupledSineBowl extends DoubleProblem {
 
-    private static final double ALPHA = 10.0;//0.4;
-    private static final double BETA = 3.0;
-    private static final double GAMMA = 0.5;
-    private static final double DELTA = 0.15;
+    private static final double ALPHA = 15.0;//0.4;
+    private static final double BETA = 7.0;//3.0;
+    private static final double GAMMA = 0.8;//0.5;
+    private static final double DELTA = 0.4;//0.15;
 
     private double[] c; // shift vector
     private double[] w; // weights
@@ -51,7 +51,7 @@ public class ShiftedCoupledSineBowl extends DoubleProblem {
             w[0] = 1.0;
         } else {
             for (int i = 0; i < d; i++) {
-                w[i] = 1.0 + 25.0 * i / (d - 1);
+                w[i] = 1.0 + 4.0 * i / (d - 1); //original formula is 1 + 4*(i-1)/(d-1), but to increase the difficulty we can use 1 + 25*(i-1)/(d-1)
             }
         }
     }

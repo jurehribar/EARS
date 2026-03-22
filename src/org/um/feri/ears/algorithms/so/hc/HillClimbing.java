@@ -133,6 +133,8 @@ public class HillClimbing extends NumberAlgorithm {
                         currentBest = task.generateRandomEvaluatedSolution();
                 }
             }
+            if(displayData)
+                System.out.println(task.getNumberOfEvaluations() + " " + globalBest);
         }
         return globalBest;
     }

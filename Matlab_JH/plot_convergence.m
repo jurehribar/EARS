@@ -186,7 +186,7 @@ function plot_convergence(filename)
         'VerticalAlignment', 'top', 'FontSize', 10, 'Interpreter', 'tex');
 
     % Add a box
-    rectangle('Position', [0.05, 0.05, 0.9, 0.9], 'EdgeColor', 'k', 'LineWidth', 2);
+    rectangle('Position', [0.05, 0.05, 0.9, 9.9], 'EdgeColor', 'k', 'LineWidth', 2);
 
     %% Print summary to console
     fprintf('\n=== Optimization Summary ===\n');

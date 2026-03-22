@@ -294,7 +294,9 @@ public class CMAES extends NumberAlgorithm {
 
 				population[i] = new NumberSolution<>(arx[i]);
 			}
-			
+			if(displayData)
+				System.out.println(task.getNumberOfEvaluations() + " " + best);
+
 			updateDistribution();         // pass fitness array to update search distribution
 			task.incrementNumberOfIterations();
 		}

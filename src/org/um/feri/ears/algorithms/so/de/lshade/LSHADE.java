@@ -307,6 +307,8 @@ public class LSHADE extends NumberAlgorithm {
                     pNum = 2;
                 }
             }
+            if(displayData)
+                System.out.println(task.getNumberOfEvaluations() + " " + best);
             task.incrementNumberOfIterations();
         }
         return best;

@@ -23,10 +23,10 @@ function ShiftedCoupledSineBowl_2D_plot(solution_point)
     end
 
     % Parameters
-    alpha = 10;%0.4;
-    beta = 3.0;
-    gamma = 0.5;
-    delta = 0.15;
+    alpha = 15.0;%0.4;
+    beta = 7.0;
+    gamma = 0.8;
+    delta = 0.4;
     d = 2; % dimensions
 
     % Shift vector: c_i = 0.4*cos(i)
@@ -38,8 +38,14 @@ function ShiftedCoupledSineBowl_2D_plot(solution_point)
     % Weights: w_i = 1 + 4*(i-1)/(d-1)
     w = zeros(1, d);
     for i = 1:d
-        w(i) = 1.0 + 25.0 * (i-1) / (d-1);
+        w(i) = 1.0 + 4.0 * (i-1) / (d-1);
     end
+    % w = zeros(1,d);
+    % for i = 1:d
+    %     w(i) = 100^((3*(i-1))/(d-1));
+    % end
+
+
 
     % Display parameters
     fprintf('=== Shifted Coupled Sine Bowl Function (d=%d) ===\n', d);
