@@ -23,7 +23,7 @@ public class JureHBenchmark extends SOBenchmark<NumberSolution<Double>, NumberSo
 
     @Override
     public void initAllProblems() {
-        addTask(new ShiftedCoupledSineBowl(5), stopCriterion, 200000, 0, maxIterations);
-        //addTask(new ShiftedCoupledSineBowl(10), stopCriterion, 200000, 0, maxIterations);
+        //addTask(new ShiftedCoupledSineBowl(5), stopCriterion, 200000, 0, maxIterations);
+        addTask(new ShiftedCoupledSineBowl(10), stopCriterion, 200000, 0, maxIterations);
     }
 }
