@@ -28,9 +28,10 @@ public class SOSingleRun {
         //NumberAlgorithm alg = new DE(DE.Strategy.JDE_RAND_1_BIN);
         //NumberAlgorithm alg = new CMAES();
         //NumberAlgorithm alg = new ES1pNsAlgorithm();
-        NumberAlgorithm alg = new HillClimbing();
+        //NumberAlgorithm alg = new HillClimbing();
         //NumberAlgorithm alg = new LSHADE();
         //NumberAlgorithm alg = new JADE();
+        NumberAlgorithm alg =  new PSO(50,0.5,2.0,2.0); //Default parameters are popSize=30, omega=0.7, c1=2, c2=2
         //NumberAlgorithm alg = new PSO();
 
         NumberSolution<Double> best;
