@@ -22,10 +22,12 @@ public class SOBenchmarkJureH {
         //add algorithms to a list
 
         ArrayList<NumberAlgorithm> algorithms = new ArrayList<NumberAlgorithm>();
-        algorithms.add(new JADE());
+        //algorithms.add(new JADE(60,0.7,0.10)); //Default parameters are popSize=30, p=0.05, c=0.1
+        algorithms.add(new JADE()); //Default parameters are popSize=30, p=0.05, c=0.1
         algorithms.add(new LSHADE());
         algorithms.add(new DE(DE.Strategy.JDE_RAND_1_BIN));
-        algorithms.add(new PSO());
+        algorithms.add(new PSO(50,0.5,2.0,2.0)); //Default parameters are popSize=30, omega=0.7, c1=2, c2=2
+        //algorithms.add(new PSO());
         algorithms.add(new RandomSearch());
 
         JureHBenchmark bench = new JureHBenchmark(); // benchmark with prepared tasks and settings
