@@ -26,8 +26,9 @@ public class TestFill2D{
 	public static void test1(String algorithm) throws Exception {
 		int dimm = 2;
 		DoubleProblem[] problems = {
-				new Rastrigin(dimm),
-				new Sphere(dimm),
+				//new Rastrigin(dimm),
+				//new Sphere(dimm),
+				new ShiftedCoupledSineBowl(dimm),
 		};
 
 		File directory = new File(SCANLINE_DIR + "/");

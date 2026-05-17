@@ -124,9 +124,31 @@ compileTestKotlin {
     }
 }
 
-// Custom task to run TestFill2D with increased heap memory
+def attractionJvmArgs = ['-Xmx12g', '-Xms4g']
+
+task runTestHeatMap2D(type: JavaExec) {
+    mainClass = 'org.um.feri.analyse.attractionBasins.TestHeatMap2D'
+    classpath = sourceSets.main.runtimeClasspath
+    jvmArgs = attractionJvmArgs
+}
+
 task runTestFill2D(type: JavaExec) {
     mainClass = 'org.um.feri.analyse.attractionBasins.TestFill2D'
     classpath = sourceSets.main.runtimeClasspath
-    jvmArgs = ['-Xmx12g', '-Xms4g']
+    jvmArgs = attractionJvmArgs
+}
+
+task runTestMeasure(type: JavaExec) {
+    mainClass = 'org.um.feri.analyse.attractionBasins.Measure'
+    classpath = sourceSets.main.runtimeClasspath
+    jvmArgs = attractionJvmArgs
+}
+
+runTestFill2D.mustRunAfter runTestHeatMap2D
+runTestMeasure.mustRunAfter runTestFill2D
+
+task runAttractionBasinTests {
+    group = 'verification'
+    description = 'Runs HeatMap2D, Fill2D, and Measure attraction basin tasks.'
+    dependsOn runTestHeatMap2D, runTestFill2D, runTestMeasure
 }
