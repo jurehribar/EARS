@@ -68,9 +68,9 @@ public class HeatMap2D implements Serializable{
 		x2s = new double[sizeX2];
 
 		int i = 0;
-		for (double x1 = this.lowerBound.get(0).doubleValue(); x1 <= this.upperBound.get(0).doubleValue() && i < sizeX1; x1 += this.step.get(0)) {
+		for (double x1 = this.lowerBound.get(0); x1 <= this.upperBound.get(0) && i < sizeX1; x1 += this.step.get(0)) {
 			int j = 0;
-			for (double x2 = this.lowerBound.get(1).doubleValue(); x2 <= this.upperBound.get(1).doubleValue() && j < sizeX2; x2 += this.step.get(1)) {
+			for (double x2 = this.lowerBound.get(1); x2 <= this.upperBound.get(1) && j < sizeX2; x2 += this.step.get(1)) {
 				evals[i][j] = problem.eval(new double[] { x1, x2 });
 				x1s[i] = x1;
 				x2s[j] = x2;

@@ -123,3 +123,10 @@ compileTestKotlin {
         jvmTarget = "17"
     }
 }
+
+// Custom task to run TestFill2D with increased heap memory
+task runTestFill2D(type: JavaExec) {
+    mainClass = 'org.um.feri.analyse.attractionBasins.TestFill2D'
+    classpath = sourceSets.main.runtimeClasspath
+    jvmArgs = ['-Xmx12g', '-Xms4g']
+}
