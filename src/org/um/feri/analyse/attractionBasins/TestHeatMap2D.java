@@ -2,6 +2,7 @@ package org.um.feri.analyse.attractionBasins;
 
 import org.um.feri.ears.problems.DoubleProblem;
 import org.um.feri.ears.problems.Problem;
+import org.um.feri.ears.problems.misc.InvertedHemispheres;
 import org.um.feri.ears.problems.unconstrained.*;
 import org.um.feri.ears.problems.unconstrained.cec2005.F10;
 import org.um.feri.ears.problems.unconstrained.cec2005.F16;
@@ -27,7 +28,8 @@ public class TestHeatMap2D{
 		DoubleProblem[] problems = {
 				//new Rastrigin(dimm),
 				//new Sphere(dimm),
-				new ShiftedCoupledSineBowl(dimm),
+				//new ShiftedCoupledSineBowl(dimm),
+				new InvertedHemispheres()
 		};
 		
 		for(int j = 0; j < RESOLUTIONS.length; j++) {

@@ -22,10 +22,10 @@ public class InvertedHemispheres extends DoubleProblem {
     private final double radius;
 
     /**
-     * Constructor with default parameters: baseHeight=2, centerOffset=1.3, radius=1
+     * Constructor with default parameters: baseHeight=2, centerOffset=2.0, radius=1.7
      */
     public InvertedHemispheres() {
-        this(2.0, 1.3, 1.0);
+        this(2.0, 2.0, 1.7);
     }
 
     /**
@@ -41,8 +41,8 @@ public class InvertedHemispheres extends DoubleProblem {
         this.centerOffset = centerOffset;
         this.radius = radius;
 
-        lowerLimit = new ArrayList<>(Collections.nCopies(numberOfDimensions, -10.0));
-        upperLimit = new ArrayList<>(Collections.nCopies(numberOfDimensions, 10.0));
+        lowerLimit = new ArrayList<>(Collections.nCopies(numberOfDimensions, -4.0));
+        upperLimit = new ArrayList<>(Collections.nCopies(numberOfDimensions, 4.0));
     }
 
     @Override

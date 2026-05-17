@@ -1,7 +1,7 @@
 package org.um.feri.analyse.attractionBasins;
 
 import org.um.feri.ears.problems.DoubleProblem;
-import org.um.feri.ears.problems.Problem;
+import org.um.feri.ears.problems.misc.InvertedHemispheres;
 import org.um.feri.ears.problems.unconstrained.*;
 
 import javax.imageio.ImageIO;
@@ -24,8 +24,9 @@ public class Measure {
 	static public void main(String[] args) throws Exception {
 		DoubleProblem[] problems = {
 				//new Rastrigin(2),
-	            //new Sphere(2)
-				new ShiftedCoupledSineBowl(2),
+				//new Sphere(2)
+				//new ShiftedCoupledSineBowl(2)
+				new InvertedHemispheres()
 		};
 		drawAttractionBasins(problems);
 	}
@@ -39,29 +40,10 @@ public class Measure {
 				int width = fill2D.map.length;
 				int height = fill2D.map[0].length;
 				
-				// Count unique basins
-				HashMap<Integer, Integer> basinCount = new HashMap<>();
-				for(int x = 0; x < width; x++) {
-					for(int y = 0; y < height; y++) {
-						int basinId = fill2D.map[x][y].color;
-						basinCount.put(basinId, basinCount.getOrDefault(basinId, 0) + 1);
-					}
-				}
-				int numBasins = basinCount.size();
-				System.out.println("Number of unique basins: " + numBasins);
-				if(numBasins > 1000) {
-					System.out.println("WARNING: Too many basins (" + numBasins + ") - colors will be hard to distinguish!");
-				}
-
 				HashMap<Integer, Color> colorMap = new HashMap<Integer, Color>();
-				// Pre-assign boundary color
-				colorMap.put(0, Color.BLACK);
-
+						
 				Random gen = new Random();
-				// Use golden ratio for better color distribution
-				float goldenRatio = 0.618033988749895f;
-				float hue = gen.nextFloat();
-
+				
 				int fontSize = 14*width/500;
 				Font myFont = new Font ("Times", Font.BOLD, fontSize);
 				try {
@@ -80,16 +62,12 @@ public class Measure {
 							
 							if (prevVal != val) {
 								prevVal = val;
-								Color color;
+								Color color = new Color(gen.nextInt(256), gen.nextInt(256), gen.nextInt(256));
 								if (colorMap.containsKey(val)) {
 									color = colorMap.get(val);
 								}
 								else {
-									// Use HSV color space with golden ratio for better distribution
-									hue += goldenRatio;
-									hue = hue % 1.0f;
-									// High saturation and value for vivid colors
-									color = Color.getHSBColor(hue, 0.7f + gen.nextFloat() * 0.3f, 0.7f + gen.nextFloat() * 0.3f);
+									color = new Color(gen.nextInt(256), gen.nextInt(256), gen.nextInt(256));
 									colorMap.put(val, color);
 								}
 								ig2.setColor(color);
