@@ -21,16 +21,17 @@ public class TestFill2D{
 
 	public static void main(String args[]) throws Exception{
 		//test1();
-		test1("scanline");
+		test1("boundary");
+		//test1("scanline");
 	}
 	
 	public static void test1(String algorithm) throws Exception {
 		int dimm = 2;
 		DoubleProblem[] problems = {
-				//new Rastrigin(dimm),
+				new Rastrigin(dimm),
 				//new Sphere(dimm),
 				//new ShiftedCoupledSineBowl(dimm),
-				new InvertedHemispheres()
+				//new InvertedHemispheres()
 		};
 
 		File directory = new File(SCANLINE_DIR + "/");

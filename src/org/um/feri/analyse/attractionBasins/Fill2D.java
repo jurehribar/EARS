@@ -152,12 +152,56 @@ public class Fill2D implements Serializable{
 		}
 	}
 
+	public void makeBoundariesPlateau() {
+		if(this.map == null)
+			return;
+
+		for(int i = 0; i < map.length; i++) {
+			for(int j = 1; j < map[0].length-1; j+=1) {
+				if((map[i][j-1].f < map[i][j].f && map[i][j+1].f == map[i][j].f) ||
+                   (map[i][j-1].f == map[i][j].f && map[i][j+1].f < map[i][j].f) ||
+				   (map[i][j-1].f < map[i][j].f && map[i][j+1].f < map[i][j].f)) {
+					map[i][j].color = 0;
+				}
+			}
+		}
+		for(int j = 0; j < map[0].length; j++) {
+			for(int i = 1; i < map.length-1; i+=1) {
+				if((map[i-1][j].f < map[i][j].f && map[i+1][j].f == map[i][j].f) ||
+                   (map[i-1][j].f == map[i][j].f && map[i+1][j].f < map[i][j].f) ||
+                   (map[i-1][j].f < map[i][j].f && map[i+1][j].f < map[i][j].f)) {
+					map[i][j].color = 0;
+				}
+			}
+		}
+
+		for(int j = 1; j < map[0].length-1; j+=1) {
+			for(int i = 1; i < map.length-1; i+=1) {
+				//if there is peak on current diagonal
+				if((map[i-1][j-1].f < map[i][j].f && map[i+1][j+1].f == map[i][j].f) ||
+                   (map[i-1][j-1].f == map[i][j].f && map[i+1][j+1].f < map[i][j].f) ||
+                   (map[i-1][j-1].f < map[i][j].f && map[i+1][j+1].f < map[i][j].f)) {
+					// color it as a border
+					map[i][j].color = 0;
+				}
+				if((map[i-1][j+1].f < map[i][j].f && map[i+1][j-1].f == map[i][j].f) ||
+                   (map[i-1][j+1].f == map[i][j].f && map[i+1][j-1].f < map[i][j].f) ||
+                   (map[i-1][j+1].f < map[i][j].f && map[i+1][j-1].f < map[i][j].f))
+				{
+					// color it as a border
+					map[i][j].color = 0;
+				}
+			}
+		}
+	}
+
 	public void calculate(String alg) throws IOException, FileNotFoundException, ClassNotFoundException {
 		if(this.map == null)
 			return;
 
     	System.out.println("Make boundaries started.");
-		makeBoundaries();
+		//makeBoundaries();
+		makeBoundariesPlateau();
     	System.out.println("Make boundaries finished.");
 
 		// We start from replacementColor 1.

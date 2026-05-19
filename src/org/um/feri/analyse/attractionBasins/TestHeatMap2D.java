@@ -26,10 +26,10 @@ public class TestHeatMap2D{
 	public static void test1() throws FileNotFoundException, IOException {
 		int dimm = 2;
 		DoubleProblem[] problems = {
-				//new Rastrigin(dimm),
+				new Rastrigin(dimm),
 				//new Sphere(dimm),
 				//new ShiftedCoupledSineBowl(dimm),
-				new InvertedHemispheres()
+				//new InvertedHemispheres()
 		};
 		
 		for(int j = 0; j < RESOLUTIONS.length; j++) {

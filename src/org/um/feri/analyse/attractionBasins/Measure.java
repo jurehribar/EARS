@@ -23,10 +23,10 @@ public class Measure {
 
 	static public void main(String[] args) throws Exception {
 		DoubleProblem[] problems = {
-				//new Rastrigin(2),
+				new Rastrigin(2),
 				//new Sphere(2)
-				//new ShiftedCoupledSineBowl(2)
-				new InvertedHemispheres()
+				//new ShiftedCoupledSineBowl(2),
+				//new InvertedHemispheres()
 		};
 		drawAttractionBasins(problems);
 	}

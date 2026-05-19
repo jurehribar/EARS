@@ -124,7 +124,7 @@ compileTestKotlin {
     }
 }
 
-def attractionJvmArgs = ['-Xmx12g', '-Xms4g']
+def attractionJvmArgs = ['-Xmx16g', '-Xms4g']
 
 task runTestHeatMap2D(type: JavaExec) {
     mainClass = 'org.um.feri.analyse.attractionBasins.TestHeatMap2D'
