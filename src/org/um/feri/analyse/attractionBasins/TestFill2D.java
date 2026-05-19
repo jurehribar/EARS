@@ -3,6 +3,8 @@ package org.um.feri.analyse.attractionBasins;
 import org.um.feri.ears.problems.DoubleProblem;
 import org.um.feri.ears.problems.Problem;
 import org.um.feri.ears.problems.misc.InvertedHemispheres;
+import org.um.feri.ears.problems.misc.SpherePlateau;
+import org.um.feri.ears.problems.misc.TanhRadialStep;
 import org.um.feri.ears.problems.unconstrained.*;
 import org.um.feri.ears.problems.unconstrained.cec2005.F10;
 
@@ -28,10 +30,12 @@ public class TestFill2D{
 	public static void test1(String algorithm) throws Exception {
 		int dimm = 2;
 		DoubleProblem[] problems = {
-				new Rastrigin(dimm),
+				//new Rastrigin(dimm),
 				//new Sphere(dimm),
 				//new ShiftedCoupledSineBowl(dimm),
 				//new InvertedHemispheres()
+				//new TanhRadialStep()
+				new SpherePlateau()
 		};
 
 		File directory = new File(SCANLINE_DIR + "/");

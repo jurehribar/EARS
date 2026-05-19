@@ -2,6 +2,8 @@ package org.um.feri.analyse.attractionBasins;
 
 import org.um.feri.ears.problems.DoubleProblem;
 import org.um.feri.ears.problems.misc.InvertedHemispheres;
+import org.um.feri.ears.problems.misc.SpherePlateau;
+import org.um.feri.ears.problems.misc.TanhRadialStep;
 import org.um.feri.ears.problems.unconstrained.*;
 
 import javax.imageio.ImageIO;
@@ -23,10 +25,12 @@ public class Measure {
 
 	static public void main(String[] args) throws Exception {
 		DoubleProblem[] problems = {
-				new Rastrigin(2),
+				//new Rastrigin(2),
 				//new Sphere(2)
 				//new ShiftedCoupledSineBowl(2),
 				//new InvertedHemispheres()
+				//new TanhRadialStep()
+				new SpherePlateau()
 		};
 		drawAttractionBasins(problems);
 	}
