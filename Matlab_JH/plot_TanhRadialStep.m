@@ -74,7 +74,7 @@ r_vals = linspace(0, 10, 1000);
 f_vals = -h * 0.5 * (1 - tanh(k * (r_vals - r)));
 plot(r_vals, f_vals, 'b-', 'LineWidth', 2);
 grid on;
-xlabel('Distance from center (r = \sqrt{x^2 + y^2})');
+xlabel('Distance from center (r = sqrt(x^2 + y^2))', 'Interpreter', 'none');
 ylabel('f(r)');
 title('Radial Cross-Section (Inverted)');
 hold on;
