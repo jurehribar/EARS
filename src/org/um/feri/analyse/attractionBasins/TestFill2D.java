@@ -23,8 +23,8 @@ public class TestFill2D{
 
 	public static void main(String args[]) throws Exception{
 		//test1();
-		test1("boundary");
-		//test1("scanline");
+		//test1("boundary");
+		test1("scanline");
 	}
 	
 	public static void test1(String algorithm) throws Exception {

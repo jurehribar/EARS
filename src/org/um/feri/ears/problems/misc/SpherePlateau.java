@@ -8,11 +8,6 @@ import java.util.Collections;
 
 import static java.lang.Math.pow;
 
-/*
-https://www.sfu.ca/~ssurjano/spheref.html
-http://benchmarkfcns.xyz/benchmarkfcns/spherefcn.html
-http://infinity77.net/global_optimization/test_functions_nd_S.html#go_benchmark.Sphere
-*/
 public class SpherePlateau extends DoubleProblem {
     public SpherePlateau() {
         super("SpherePlateau", 2, 1, 1, 0);

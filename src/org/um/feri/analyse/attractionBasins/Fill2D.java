@@ -124,14 +124,14 @@ public class Fill2D implements Serializable{
 		
 		for(int i = 0; i < map.length; i++) {
 			for(int j = 1; j < map[0].length-1; j+=1) {
-				if(map[i][j-1].f < map[i][j].f && map[i][j+1].f < map[i][j].f) { 
+				if(map[i][j-1].f < map[i][j].f && map[i][j+1].f < map[i][j].f) {
 					map[i][j].color = 0;
 				}
 			}
 		}
 		for(int j = 0; j < map[0].length; j++) {
 			for(int i = 1; i < map.length-1; i+=1) {
-				if(map[i-1][j].f < map[i][j].f && map[i+1][j].f < map[i][j].f) { 
+				if(map[i-1][j].f < map[i][j].f && map[i+1][j].f < map[i][j].f) {
 					map[i][j].color = 0;
 				}
 			}
@@ -140,11 +140,11 @@ public class Fill2D implements Serializable{
 		for(int j = 1; j < map[0].length-1; j+=1) {
 			for(int i = 1; i < map.length-1; i+=1) {
 				//if there is peak on current diagonal
-				if(map[i-1][j-1].f < map[i][j].f && map[i+1][j+1].f < map[i][j].f) { 
+				if(map[i-1][j-1].f < map[i][j].f && map[i+1][j+1].f < map[i][j].f) {
 					// color it as a border
 					map[i][j].color = 0;
 				}
-				if(map[i-1][j+1].f < map[i][j].f && map[i+1][j-1].f < map[i][j].f) { 
+				if(map[i-1][j+1].f < map[i][j].f && map[i+1][j-1].f < map[i][j].f) {
 					// color it as a border
 					map[i][j].color = 0;
 				}
@@ -155,21 +155,33 @@ public class Fill2D implements Serializable{
 	public void makeBoundariesPlateau() {
 		if(this.map == null)
 			return;
-
+		/*
+		*  a _/
+		*  b ‾\
+		*  c /‾
+		*  d \_
+		*  e /\
+		* */
 		for(int i = 0; i < map.length; i++) {
 			for(int j = 1; j < map[0].length-1; j+=1) {
-				if((map[i][j-1].f < map[i][j].f && map[i][j+1].f == map[i][j].f) ||
-                   (map[i][j-1].f == map[i][j].f && map[i][j+1].f < map[i][j].f) ||
-				   (map[i][j-1].f < map[i][j].f && map[i][j+1].f < map[i][j].f)) {
+				if((map[i][j-1].f == map[i][j].f && map[i][j].f < map[i][j+1].f) || //a
+                   (map[i][j-1].f == map[i][j].f && map[i][j].f > map[i][j+1].f) || //b
+                   (map[i][j-1].f < map[i][j].f && map[i][j].f == map[i][j+1].f) || //c
+                   (map[i][j-1].f > map[i][j].f && map[i][j].f == map[i][j+1].f) || //d
+				   (map[i][j-1].f < map[i][j].f && map[i][j].f > map[i][j+1].f))    //e
+				{
 					map[i][j].color = 0;
 				}
 			}
 		}
 		for(int j = 0; j < map[0].length; j++) {
 			for(int i = 1; i < map.length-1; i+=1) {
-				if((map[i-1][j].f < map[i][j].f && map[i+1][j].f == map[i][j].f) ||
-                   (map[i-1][j].f == map[i][j].f && map[i+1][j].f < map[i][j].f) ||
-                   (map[i-1][j].f < map[i][j].f && map[i+1][j].f < map[i][j].f)) {
+				if((map[i-1][j].f == map[i][j].f && map[i][j].f < map[i+1][j].f) || //a
+                   (map[i-1][j].f == map[i][j].f && map[i][j].f > map[i+1][j].f) || //b
+                   (map[i-1][j].f < map[i][j].f && map[i][j].f == map[i+1][j].f) || //c
+                   (map[i-1][j].f > map[i][j].f && map[i][j].f == map[i+1][j].f) || //d
+                   (map[i-1][j].f < map[i][j].f && map[i][j].f > map[i+1][j].f))    //e
+				{
 					map[i][j].color = 0;
 				}
 			}
@@ -178,17 +190,20 @@ public class Fill2D implements Serializable{
 		for(int j = 1; j < map[0].length-1; j+=1) {
 			for(int i = 1; i < map.length-1; i+=1) {
 				//if there is peak on current diagonal
-				if((map[i-1][j-1].f < map[i][j].f && map[i+1][j+1].f == map[i][j].f) ||
-                   (map[i-1][j-1].f == map[i][j].f && map[i+1][j+1].f < map[i][j].f) ||
-                   (map[i-1][j-1].f < map[i][j].f && map[i+1][j+1].f < map[i][j].f)) {
-					// color it as a border
+				if((map[i-1][j-1].f == map[i][j].f && map[i][j].f < map[i+1][j+1].f) || //a
+                   (map[i-1][j-1].f == map[i][j].f && map[i][j].f > map[i+1][j+1].f) || //b
+                   (map[i-1][j-1].f < map[i][j].f && map[i][j].f == map[i+1][j+1].f) || //c
+                   (map[i-1][j-1].f > map[i][j].f && map[i][j].f == map[i+1][j+1].f) || //d
+                   (map[i-1][j-1].f < map[i][j].f && map[i][j].f > map[i+1][j+1].f))    //e
+				{
 					map[i][j].color = 0;
 				}
-				if((map[i-1][j+1].f < map[i][j].f && map[i+1][j-1].f == map[i][j].f) ||
-                   (map[i-1][j+1].f == map[i][j].f && map[i+1][j-1].f < map[i][j].f) ||
-                   (map[i-1][j+1].f < map[i][j].f && map[i+1][j-1].f < map[i][j].f))
+				if((map[i-1][j+1].f == map[i][j].f && map[i][j].f < map[i+1][j-1].f) || //a
+                   (map[i-1][j+1].f == map[i][j].f && map[i][j].f > map[i+1][j-1].f) || //b
+                   (map[i-1][j+1].f < map[i][j].f && map[i][j].f == map[i+1][j-1].f) || //c
+                   (map[i-1][j+1].f > map[i][j].f && map[i][j].f == map[i+1][j-1].f) || //d
+                   (map[i-1][j+1].f < map[i][j].f && map[i][j].f > map[i+1][j-1].f))    //e
 				{
-					// color it as a border
 					map[i][j].color = 0;
 				}
 			}
