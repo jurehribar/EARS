@@ -3,6 +3,7 @@ package org.um.feri.analyse.attractionBasins;
 import org.um.feri.ears.problems.DoubleProblem;
 import org.um.feri.ears.problems.Problem;
 import org.um.feri.ears.problems.misc.InvertedHemispheres;
+import org.um.feri.ears.problems.misc.RastriginPlateau;
 import org.um.feri.ears.problems.misc.SpherePlateau;
 import org.um.feri.ears.problems.misc.TanhRadialStep;
 import org.um.feri.ears.problems.unconstrained.*;
@@ -35,7 +36,8 @@ public class TestFill2D{
 				//new ShiftedCoupledSineBowl(dimm),
 				//new InvertedHemispheres()
 				//new TanhRadialStep()
-				new SpherePlateau()
+				//new SpherePlateau()
+				new RastriginPlateau()
 		};
 
 		File directory = new File(SCANLINE_DIR + "/");
