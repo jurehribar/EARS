@@ -36,7 +36,8 @@ public class TestFill2D{
 				//new SpherePlateau()
 				//new RastriginPlateau()
 				//new PiecewiseLinearPlateau()
-				new PiecewiseLinear1D_Y()
+				//new PiecewiseLinear1D_Y()
+				new Easom()
 		};
 
 		File directory = new File(SCANLINE_DIR + "/");

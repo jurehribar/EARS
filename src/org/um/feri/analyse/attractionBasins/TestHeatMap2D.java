@@ -34,7 +34,8 @@ public class TestHeatMap2D{
 				//new SpherePlateau()
 				//new RastriginPlateau()
 				//new PiecewiseLinearPlateau()
-				new PiecewiseLinear1D_Y()
+				//new PiecewiseLinear1D_Y()
+				new Easom()
 		};
 		
 		for(int j = 0; j < RESOLUTIONS.length; j++) {

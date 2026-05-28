@@ -44,6 +44,9 @@ public class Fill2D implements Serializable{
     		throw new IllegalArgumentException("ProblemName is null!");
     	System.out.println("Heatmap reading finished.");
         calculate(alg);
+        System.out.println("Plateau detection started.");
+        detectPlateaus();
+        System.out.println("Plateau detection finished.");
         if(smoothBoundaries) {
         	System.out.println("Smoothing started.");
         	smooth();
@@ -67,6 +70,7 @@ public class Fill2D implements Serializable{
 				point.x2 = heatMap.x2s[j];
 				point.f = heatMap.evals[i][j];
 				point.color = -1;
+				point.plateau = 0;
 				map[i][j] = point;
 			}
 		}
@@ -285,6 +289,7 @@ public class Fill2D implements Serializable{
 
 	private void scanlinefill(int i, int j, int replacementColor) {
 		int targetColor = this.map[i][j].color;
+		double currenFVal = map[i][j].f;
 
         Stack<Pair<Integer, Integer>> points = new Stack<Pair<Integer, Integer>>(); 
 
@@ -323,6 +328,69 @@ public class Fill2D implements Serializable{
 		}
 	}
 	
+	public void detectPlateaus() {
+		if (this.map == null)
+			return;
+
+		int plateauCounter = 1;
+		double epsilon = 1e-9;
+
+		for (int i = 0; i < this.map.length; i++) {
+			for (int j = 0; j < this.map[i].length; j++) {
+				// Only process unvisited non-boundary points
+				if (this.map[i][j].plateau == 0 && this.map[i][j].color != 0) {
+					double seedF = this.map[i][j].f;
+
+					// Flood-fill to find all connected points with the same f value
+					Stack<Pair<Integer, Integer>> stack = new Stack<>();
+					java.util.List<Pair<Integer, Integer>> region = new java.util.ArrayList<>();
+					stack.push(new Pair<>(i, j));
+
+					while (!stack.isEmpty()) {
+						Pair<Integer, Integer> curr = stack.pop();
+						int x = curr.getFirst();
+						int y = curr.getSecond();
+
+						// Bounds check
+						if (x < 0 || x >= this.map.length || y < 0 || y >= this.map[0].length)
+							continue;
+						// Skip already visited, boundary, or different f value
+						if (this.map[x][y].plateau != 0)
+							continue;
+						if (this.map[x][y].color == 0)
+							continue;
+						if (Math.abs(this.map[x][y].f - seedF) > epsilon)
+							continue;
+
+						// Mark as visited (temporarily use negative counter)
+						this.map[x][y].plateau = -1;
+						region.add(new Pair<>(x, y));
+
+						// Push 4 neighbors
+						stack.push(new Pair<>(x - 1, y));
+						stack.push(new Pair<>(x + 1, y));
+						stack.push(new Pair<>(x, y - 1));
+						stack.push(new Pair<>(x, y + 1));
+					}
+
+					// Only assign a plateau ID if region has more than 1 point (actual flat area)
+					if (region.size() > 1) {
+						for (Pair<Integer, Integer> p : region) {
+							this.map[p.getFirst()][p.getSecond()].plateau = plateauCounter;
+						}
+						plateauCounter++;
+					} else {
+						// Single point - not a plateau, reset to 0
+						for (Pair<Integer, Integer> p : region) {
+							this.map[p.getFirst()][p.getSecond()].plateau = 0;
+						}
+					}
+				}
+			}
+		}
+		System.out.println("Plateaus detected: " + (plateauCounter - 1));
+	}
+
 	public void smooth() {
 		if(this.map == null)
 			return;

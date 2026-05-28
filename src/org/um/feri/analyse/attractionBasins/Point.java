@@ -9,4 +9,5 @@ public class Point implements Serializable{
 	public double x2;
 	public double f;
 	public int color;
+	public int plateau;
 }
