@@ -190,18 +190,18 @@ public class Fill2D implements Serializable{
 		for(int j = 1; j < map[0].length-1; j+=1) {
 			for(int i = 1; i < map.length-1; i+=1) {
 				//if there is peak on current diagonal
-				if((map[i-1][j-1].f == map[i][j].f && map[i][j].f < map[i+1][j+1].f) || //a
+				if(/*(map[i-1][j-1].f == map[i][j].f && map[i][j].f < map[i+1][j+1].f) || //a
                    (map[i-1][j-1].f == map[i][j].f && map[i][j].f > map[i+1][j+1].f) || //b
                    (map[i-1][j-1].f < map[i][j].f && map[i][j].f == map[i+1][j+1].f) || //c
-                   (map[i-1][j-1].f > map[i][j].f && map[i][j].f == map[i+1][j+1].f) || //d
+                   (map[i-1][j-1].f > map[i][j].f && map[i][j].f == map[i+1][j+1].f) || //d */
                    (map[i-1][j-1].f < map[i][j].f && map[i][j].f > map[i+1][j+1].f))    //e
 				{
 					map[i][j].color = 0;
 				}
-				if((map[i-1][j+1].f == map[i][j].f && map[i][j].f < map[i+1][j-1].f) || //a
+				if(/*(map[i-1][j+1].f == map[i][j].f && map[i][j].f < map[i+1][j-1].f) || //a
                    (map[i-1][j+1].f == map[i][j].f && map[i][j].f > map[i+1][j-1].f) || //b
                    (map[i-1][j+1].f < map[i][j].f && map[i][j].f == map[i+1][j-1].f) || //c
-                   (map[i-1][j+1].f > map[i][j].f && map[i][j].f == map[i+1][j-1].f) || //d
+                   (map[i-1][j+1].f > map[i][j].f && map[i][j].f == map[i+1][j-1].f) || //d */
                    (map[i-1][j+1].f < map[i][j].f && map[i][j].f > map[i+1][j-1].f))    //e
 				{
 					map[i][j].color = 0;
