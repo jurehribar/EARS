@@ -2,10 +2,7 @@ package org.um.feri.analyse.attractionBasins;
 
 import org.um.feri.ears.problems.DoubleProblem;
 import org.um.feri.ears.problems.Problem;
-import org.um.feri.ears.problems.misc.InvertedHemispheres;
-import org.um.feri.ears.problems.misc.RastriginPlateau;
-import org.um.feri.ears.problems.misc.SpherePlateau;
-import org.um.feri.ears.problems.misc.TanhRadialStep;
+import org.um.feri.ears.problems.misc.*;
 import org.um.feri.ears.problems.unconstrained.*;
 import org.um.feri.ears.problems.unconstrained.cec2005.F10;
 
@@ -37,7 +34,9 @@ public class TestFill2D{
 				//new InvertedHemispheres()
 				//new TanhRadialStep()
 				//new SpherePlateau()
-				new RastriginPlateau()
+				//new RastriginPlateau()
+				//new PiecewiseLinearPlateau()
+				new PiecewiseLinear1D_Y()
 		};
 
 		File directory = new File(SCANLINE_DIR + "/");

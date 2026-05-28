@@ -1,10 +1,7 @@
 package org.um.feri.analyse.attractionBasins;
 
 import org.um.feri.ears.problems.DoubleProblem;
-import org.um.feri.ears.problems.misc.InvertedHemispheres;
-import org.um.feri.ears.problems.misc.RastriginPlateau;
-import org.um.feri.ears.problems.misc.SpherePlateau;
-import org.um.feri.ears.problems.misc.TanhRadialStep;
+import org.um.feri.ears.problems.misc.*;
 import org.um.feri.ears.problems.unconstrained.*;
 
 import javax.imageio.ImageIO;
@@ -32,7 +29,9 @@ public class Measure {
 				//new InvertedHemispheres()
 				//new TanhRadialStep()
 				//new SpherePlateau()
-				new RastriginPlateau()
+				//new RastriginPlateau()
+				//new PiecewiseLinearPlateau()
+				new PiecewiseLinear1D_Y()
 		};
 		drawAttractionBasins(problems);
 	}
