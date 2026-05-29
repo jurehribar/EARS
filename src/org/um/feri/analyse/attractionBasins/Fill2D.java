@@ -4,7 +4,9 @@ import org.apache.commons.math3.util.Pair;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -32,7 +34,7 @@ public class Fill2D implements Serializable{
     
     public Fill2D(String alg, String inputPathHeatmap, boolean smoothBoundaries) throws FileNotFoundException, ClassNotFoundException, IOException 
     {
-    	this(alg, inputPathHeatmap, smoothBoundaries, 1);
+    	this(alg, inputPathHeatmap, smoothBoundaries, 5);
     }
 
     /**
@@ -386,10 +388,29 @@ public class Fill2D implements Serializable{
 						stack.push(new Pair<>(x, y + 1));
 					}
 
-					// Assign plateau ID only if region has more than minPlateauSize cells.
-					// minPlateauSize=1 → region.size() > 1 (at least 2 cells, i.e. same as original behaviour).
-					// minPlateauSize=N → only regions larger than N cells are marked.
-					if (region.size() > minPlateauSize) {
+					// Build a set of region positions for O(1) neighbour lookup
+					int cols = this.map[0].length;
+					Set<Long> regionSet = new HashSet<>();
+					for (Pair<Integer, Integer> p : region) {
+						regionSet.add((long) p.getFirst() * cols + p.getSecond());
+					}
+
+					// Erode: keep only cells where ALL 4 orthogonal neighbours are also in the region.
+					// This rejects thin 1-pixel-wide lines/ridges — they have no fully-interior cell.
+					int coreSize = 0;
+					for (Pair<Integer, Integer> p : region) {
+						int x = p.getFirst(), y = p.getSecond();
+						if (regionSet.contains((long)(x-1) * cols + y) &&
+							regionSet.contains((long)(x+1) * cols + y) &&
+							regionSet.contains((long) x    * cols + (y-1)) &&
+							regionSet.contains((long) x    * cols + (y+1))) {
+							coreSize++;
+						}
+					}
+
+					// Assign plateau ID only if the eroded core is larger than minPlateauSize.
+					// minPlateauSize=1 → coreSize > 1 (default, same as before).
+					if (coreSize > minPlateauSize) {
 						for (Pair<Integer, Integer> p : region) {
 							this.map[p.getFirst()][p.getSecond()].plateau = plateauCounter;
 						}
