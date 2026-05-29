@@ -1,59 +1,41 @@
 package org.um.feri.analyse.attractionBasins;
 
 import org.um.feri.ears.problems.DoubleProblem;
-import org.um.feri.ears.problems.Problem;
-import org.um.feri.ears.problems.misc.*;
-import org.um.feri.ears.problems.unconstrained.*;
-import org.um.feri.ears.problems.unconstrained.cec2005.F10;
-import org.um.feri.ears.problems.unconstrained.cec2005.F16;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+public class TestHeatMap2D {
 
-public class TestHeatMap2D{
-    
-	public static String OUTPUT_DIR = "/Users/jurehribar/Dev/TestEARS/HeatMaps/";
-	public static String[] RESOLUTIONS = {"10000"};
+    public static void main(String[] args) throws Exception {
+        PipelineConfig config = PipelineConfig.load();
 
-	public static void main(String[] args) throws Exception{
-		test1(); // Calculates heat maps for each resolution in RESOLUTIONS and makes a new directories within OUTPUT_DIR - Takes some time ~30mins
-	}
-	
-	public static void test1() throws FileNotFoundException, IOException {
-		int dimm = 2;
-		DoubleProblem[] problems = {
-				//new Rastrigin(dimm),
-				//new Sphere(dimm),
-				//new ShiftedCoupledSineBowl(dimm),
-				//new InvertedHemispheres()
-				//new TanhRadialStep()
-				//new SpherePlateau()
-				//new RastriginPlateau()
-				//new PiecewiseLinearPlateau()
-				//new PiecewiseLinear1D_Y()
-				new Easom()
-		};
-		
-		for(int j = 0; j < RESOLUTIONS.length; j++) {
-		    File directory = new File(OUTPUT_DIR);
-		    if (!directory.exists()){
-		        directory.mkdir();
-		    }
-			for(int i = 0; i < problems.length; i++) {
-				System.out.println(problems[i].getName() + " (" + (i+1) + "/" + problems.length + ")");
-				List<Double> step =  new ArrayList<Double>();
-				step.add((problems[i].upperLimit.get(0) - problems[i].lowerLimit.get(0)) / Float.parseFloat(RESOLUTIONS[j]));
-				step.add((problems[i].upperLimit.get(1) - problems[i].lowerLimit.get(1)) / Float.parseFloat(RESOLUTIONS[j]));
-				HeatMap2D heatMap2D = new HeatMap2D(step, problems[i]);
-				heatMap2D.writeCompressedThisToFile(OUTPUT_DIR+problems[i].getName()+"Compressed.object");
-				heatMap2D.writeEvalsAndScript(OUTPUT_DIR, problems[i].getName());
-				System.out.println(heatMap2D.toString());
-			}
-		}
-	}
-		
+        // Problem is supplied via Gradle system property -DproblemName=X -DproblemDims=2
+        String problemName = System.getProperty("problemName");
+        int dims = Integer.parseInt(System.getProperty("problemDims", "2"));
+
+        if (problemName == null || problemName.isEmpty())
+            throw new IllegalArgumentException(
+                "System property -DproblemName is required. " +
+                "Run via Gradle: gradlew runHeatMap_<ProblemName>");
+
+        DoubleProblem problem = ProblemFactory.create(problemName, dims);
+
+        File directory = new File(config.heatmapDir);
+        if (!directory.exists()) directory.mkdirs();
+
+        System.out.println("Generating heatmap for: " + problem.getName()
+                + "  resolution=" + config.resolution);
+
+        List<Double> step = new ArrayList<>();
+        step.add((problem.upperLimit.get(0) - problem.lowerLimit.get(0)) / (double) config.resolution);
+        step.add((problem.upperLimit.get(1) - problem.lowerLimit.get(1)) / (double) config.resolution);
+
+        HeatMap2D heatMap2D = new HeatMap2D(step, problem);
+        heatMap2D.writeCompressedThisToFile(config.heatmapDir + "/" + problem.getName() + "Compressed.object");
+        heatMap2D.writeEvalsAndScript(config.heatmapDir + "/", problem.getName());
+        System.out.println(heatMap2D.toString());
+        System.out.println("Heatmap done: " + problem.getName());
+    }
 }

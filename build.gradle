@@ -124,31 +124,74 @@ compileTestKotlin {
     }
 }
 
-def attractionJvmArgs = ['-Xmx16g', '-Xms4g']
+// ── Attraction Basin Pipeline ─────────────────────────────────────────────────
+// Each problem from config.properties gets its own set of 3 JavaExec tasks,
+// each running in a separate JVM with full heap/stack memory.
+// Usage:
+//   gradlew runAllAttractionBasins          – run all problems end-to-end
+//   gradlew runHeatMap_Easom                – single stage, single problem
+//   gradlew runHeatMap_Easom runFill_Easom runMeasure_Easom
+// Edit config.properties to change problems/resolution/dirs — no recompile needed.
 
-task runTestHeatMap2D(type: JavaExec) {
-    mainClass = 'org.um.feri.analyse.attractionBasins.TestHeatMap2D'
-    classpath = sourceSets.main.runtimeClasspath
-    jvmArgs = attractionJvmArgs
-}
+def attractionJvmArgs = ['-Xmx24g', '-Xms4g']
 
-task runTestFill2D(type: JavaExec) {
-    mainClass = 'org.um.feri.analyse.attractionBasins.TestFill2D'
-    classpath = sourceSets.main.runtimeClasspath
-    jvmArgs = attractionJvmArgs
-}
+if (file('config.properties').exists()) {
+    def pipelineProps = new Properties()
+    file('config.properties').withInputStream { pipelineProps.load(it) }
 
-task runTestMeasure(type: JavaExec) {
-    mainClass = 'org.um.feri.analyse.attractionBasins.Measure'
-    classpath = sourceSets.main.runtimeClasspath
-    jvmArgs = attractionJvmArgs
-}
+    def problemEntries = pipelineProps.getProperty('problems', 'Easom').split(',')
+    def prevMeasureTask = null   // actual task object reference for reliable ordering
 
-runTestFill2D.mustRunAfter runTestHeatMap2D
-runTestMeasure.mustRunAfter runTestFill2D
+    problemEntries.each { entry ->
+        entry = entry.trim()
+        if (entry.isEmpty()) return
+        def parts       = entry.split(':')
+        def problemName = parts[0].trim()
+        def problemDims = parts.length > 1 ? parts[1].trim() : '2'
+        def problemArgs = attractionJvmArgs + ["-DproblemName=${problemName}", "-DproblemDims=${problemDims}"]
 
-task runAttractionBasinTests {
-    group = 'verification'
-    description = 'Runs HeatMap2D, Fill2D, and Measure attraction basin tasks.'
-    dependsOn runTestHeatMap2D, runTestFill2D, runTestMeasure
+        // Use task object references so mustRunAfter is resolved correctly
+        def heatMapTask = task("runHeatMap_${problemName}", type: JavaExec) {
+            group       = 'attraction basins'
+            description = "Generate heatmap for ${problemName}"
+            mainClass   = 'org.um.feri.analyse.attractionBasins.TestHeatMap2D'
+            classpath   = sourceSets.main.runtimeClasspath
+            jvmArgs     = problemArgs
+            // Cross-problem: this problem's HeatMap must run AFTER the previous problem's Measure
+            if (prevMeasureTask != null) mustRunAfter prevMeasureTask
+        }
+
+        def fillTask = task("runFill_${problemName}", type: JavaExec) {
+            group       = 'attraction basins'
+            description = "Run scanline fill for ${problemName}"
+            mainClass   = 'org.um.feri.analyse.attractionBasins.TestFill2D'
+            classpath   = sourceSets.main.runtimeClasspath
+            jvmArgs     = problemArgs
+            mustRunAfter heatMapTask   // within-problem: Fill after HeatMap
+        }
+
+        def measureTask = task("runMeasure_${problemName}", type: JavaExec) {
+            group       = 'attraction basins'
+            description = "Render images for ${problemName}"
+            mainClass   = 'org.um.feri.analyse.attractionBasins.Measure'
+            classpath   = sourceSets.main.runtimeClasspath
+            jvmArgs     = problemArgs
+            mustRunAfter fillTask      // within-problem: Measure after Fill
+        }
+
+        prevMeasureTask = measureTask
+    }
+
+    task runAllAttractionBasins {
+        group       = 'attraction basins'
+        description = 'Runs all 3 pipeline stages for every problem listed in config.properties.'
+        problemEntries.each { entry ->
+            def problemName = entry.trim().split(':')[0].trim()
+            if (!problemName.isEmpty())
+                // Depend on all three stages — mustRunAfter chain above enforces the order
+                dependsOn "runHeatMap_${problemName}", "runFill_${problemName}", "runMeasure_${problemName}"
+        }
+    }
+} else {
+    logger.warn("WARNING: config.properties not found — attraction basin tasks not generated.")
 }
