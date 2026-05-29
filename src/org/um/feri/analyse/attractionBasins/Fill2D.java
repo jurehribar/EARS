@@ -3,10 +3,7 @@ package org.um.feri.analyse.attractionBasins;
 import org.apache.commons.math3.util.Pair;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Stack;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -348,79 +345,102 @@ public class Fill2D implements Serializable{
 		if (this.map == null)
 			return;
 
+		int rows = this.map.length;
+		int cols = this.map[0].length;
 		int plateauCounter = 1;
 
-		for (int i = 0; i < this.map.length; i++) {
-			for (int j = 0; j < this.map[i].length; j++) {
-				// Only process unvisited non-boundary points
+		// Allocate primitive int arrays ONCE and reuse for every region.
+		// At 10 000×10 000 each array is 400 MB — far cheaper than per-region
+		// List<Pair> + HashSet<Long> which cost ~9 GB for a large flat region.
+		//
+		// Encoding: a cell (x, y) is stored as the single int  x * cols + y.
+		int[] stackArr  = new int[rows * cols]; // flood-fill stack
+		int[] regionArr = new int[rows * cols]; // cells collected in current region
+
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				// Only seed from unvisited, non-boundary cells
 				if (this.map[i][j].plateau == 0 && this.map[i][j].color != 0) {
 					double seedF = this.map[i][j].f;
+					int stackTop  = 0;
+					int regionSize = 0;
 
-					// Flood-fill to find all connected points with the exact same f value
-					Stack<Pair<Integer, Integer>> stack = new Stack<>();
-					List<Pair<Integer, Integer>> region = new ArrayList<>();
-					stack.push(new Pair<>(i, j));
+					// Pre-mark seed and push — setting plateau = -1 immediately
+					// prevents any other neighbour from pushing the same cell again.
+					this.map[i][j].plateau = -1;
+					stackArr[stackTop++]    = i * cols + j;
+					regionArr[regionSize++] = i * cols + j;
 
-					while (!stack.isEmpty()) {
-						Pair<Integer, Integer> curr = stack.pop();
-						int x = curr.getFirst();
-						int y = curr.getSecond();
+					while (stackTop > 0) {
+						int cell = stackArr[--stackTop];
+						int x    = cell / cols;
+						int y    = cell % cols;
 
-						// Bounds check
-						if (x < 0 || x >= this.map.length || y < 0 || y >= this.map[0].length)
-							continue;
-						// Skip already visited, boundary, or different f value (strict equality)
-						if (this.map[x][y].plateau != 0)
-							continue;
-						if (this.map[x][y].color == 0)
-							continue;
-						if (this.map[x][y].f != seedF)
-							continue;
-
-						// Mark as visited (temporarily use -1)
-						this.map[x][y].plateau = -1;
-						region.add(new Pair<>(x, y));
-
-						// Push 4 neighbours
-						stack.push(new Pair<>(x - 1, y));
-						stack.push(new Pair<>(x + 1, y));
-						stack.push(new Pair<>(x, y - 1));
-						stack.push(new Pair<>(x, y + 1));
+						// Helper: push neighbour (nx, ny) if it qualifies and is not yet claimed.
+						// Pre-marking (plateau = -1) at push time ensures each cell is pushed at most once,
+						// bounding the stack to at most rows*cols entries.
+						if (x > 0) {
+							int nx = x - 1;
+							if (this.map[nx][y].plateau == 0 && this.map[nx][y].color != 0 && this.map[nx][y].f == seedF) {
+								this.map[nx][y].plateau  = -1;
+								stackArr[stackTop++]     = nx * cols + y;
+								regionArr[regionSize++]  = nx * cols + y;
+							}
+						}
+						if (x < rows - 1) {
+							int nx = x + 1;
+							if (this.map[nx][y].plateau == 0 && this.map[nx][y].color != 0 && this.map[nx][y].f == seedF) {
+								this.map[nx][y].plateau  = -1;
+								stackArr[stackTop++]     = nx * cols + y;
+								regionArr[regionSize++]  = nx * cols + y;
+							}
+						}
+						if (y > 0) {
+							int ny = y - 1;
+							if (this.map[x][ny].plateau == 0 && this.map[x][ny].color != 0 && this.map[x][ny].f == seedF) {
+								this.map[x][ny].plateau  = -1;
+								stackArr[stackTop++]     = x * cols + ny;
+								regionArr[regionSize++]  = x * cols + ny;
+							}
+						}
+						if (y < cols - 1) {
+							int ny = y + 1;
+							if (this.map[x][ny].plateau == 0 && this.map[x][ny].color != 0 && this.map[x][ny].f == seedF) {
+								this.map[x][ny].plateau  = -1;
+								stackArr[stackTop++]     = x * cols + ny;
+								regionArr[regionSize++]  = x * cols + ny;
+							}
+						}
 					}
 
-					// Build a set of region positions for O(1) neighbour lookup
-					int cols = this.map[0].length;
-					Set<Long> regionSet = new HashSet<>();
-					for (Pair<Integer, Integer> p : region) {
-						regionSet.add((long) p.getFirst() * cols + p.getSecond());
-					}
-
-					// Erode: keep only cells where ALL 4 orthogonal neighbours are also in the region.
-					// This rejects thin 1-pixel-wide lines/ridges — they have no fully-interior cell.
+					// Erode: count interior cells — those whose 4 orthogonal neighbours
+					// are all in the current region (plateau == -1).
+					// Replaces the HashSet<Long> lookup: O(1) direct array access.
+					// Cells on the map border or adjacent to a non-region cell are excluded.
 					int coreSize = 0;
-					for (Pair<Integer, Integer> p : region) {
-						int x = p.getFirst(), y = p.getSecond();
-						if (regionSet.contains((long)(x-1) * cols + y) &&
-							regionSet.contains((long)(x+1) * cols + y) &&
-							regionSet.contains((long) x    * cols + (y-1)) &&
-							regionSet.contains((long) x    * cols + (y+1))) {
+					for (int k = 0; k < regionSize; k++) {
+						int cell = regionArr[k];
+						int x    = cell / cols;
+						int y    = cell % cols;
+						if (x > 0 && x < rows - 1 && y > 0 && y < cols - 1
+								&& this.map[x - 1][y].plateau == -1
+								&& this.map[x + 1][y].plateau == -1
+								&& this.map[x][y - 1].plateau == -1
+								&& this.map[x][y + 1].plateau == -1) {
 							coreSize++;
 						}
 					}
 
-					// Assign plateau ID only if the eroded core is larger than minPlateauSize.
-					// minPlateauSize=1 → coreSize > 1 (default, same as before).
-					if (coreSize > minPlateauSize) {
-						for (Pair<Integer, Integer> p : region) {
-							this.map[p.getFirst()][p.getSecond()].plateau = plateauCounter;
-						}
-						plateauCounter++;
-					} else {
-						// Too small — not a plateau, reset to 0
-						for (Pair<Integer, Integer> p : region) {
-							this.map[p.getFirst()][p.getSecond()].plateau = 0;
-						}
-					}
+				// Assign final plateau ID, or -2 as "visited but not a plateau" sentinel.
+				// IMPORTANT: do NOT reset to 0 — that would cause the outer loop to
+				// re-flood-fill the same region repeatedly, making the algorithm O(N^2).
+				// -2 is skipped by the outer loop (plateau != 0) and by neighbours (plateau != 0).
+				// Callers that read plateau values should treat negative values as "no plateau".
+				int plateauId = (coreSize > minPlateauSize) ? plateauCounter++ : -2;
+				for (int k = 0; k < regionSize; k++) {
+					int cell = regionArr[k];
+					this.map[cell / cols][cell % cols].plateau = plateauId;
+				}
 				}
 			}
 		}
