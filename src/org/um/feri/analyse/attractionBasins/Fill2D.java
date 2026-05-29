@@ -3,6 +3,7 @@ package org.um.feri.analyse.attractionBasins;
 import org.apache.commons.math3.util.Pair;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 import java.util.zip.GZIPInputStream;
@@ -16,8 +17,10 @@ public class Fill2D implements Serializable{
 	public String problemName;
 	public List<Double> lowerBound; // lower bounds for each dimension
 	public List<Double> upperBound; // higher bounds for each dimension
-	
-	
+
+	private int minPlateauSize = 1; // N: minimum cells for a region to be considered a plateau
+
+
     public Fill2D() 
     { 
     	this.map = null;
@@ -29,11 +32,22 @@ public class Fill2D implements Serializable{
     
     public Fill2D(String alg, String inputPathHeatmap, boolean smoothBoundaries) throws FileNotFoundException, ClassNotFoundException, IOException 
     {
+    	this(alg, inputPathHeatmap, smoothBoundaries, 1);
+    }
+
+    /**
+     * @param minPlateauSize  N — minimum number of connected same-f cells to be considered a plateau.
+     *                        N=1 → same behaviour as before (region.size() > 1, i.e. at least 2 cells).
+     *                        N=5 → only regions with more than 5 cells are marked as plateaus.
+     */
+    public Fill2D(String alg, String inputPathHeatmap, boolean smoothBoundaries, int minPlateauSize) throws FileNotFoundException, ClassNotFoundException, IOException
+    {
     	this.map = null;
         this.step = null; 
         this.problemName = null;
         this.lowerBound = null;
         this.upperBound = null;
+        this.minPlateauSize = minPlateauSize;
     	System.out.println("Heatmap reading started.");
     	readCompressedHeatMapObject(inputPathHeatmap);
     	if(this.lowerBound == null || this.upperBound == null)
@@ -333,7 +347,6 @@ public class Fill2D implements Serializable{
 			return;
 
 		int plateauCounter = 1;
-		double epsilon = 1e-9;
 
 		for (int i = 0; i < this.map.length; i++) {
 			for (int j = 0; j < this.map[i].length; j++) {
@@ -341,9 +354,9 @@ public class Fill2D implements Serializable{
 				if (this.map[i][j].plateau == 0 && this.map[i][j].color != 0) {
 					double seedF = this.map[i][j].f;
 
-					// Flood-fill to find all connected points with the same f value
+					// Flood-fill to find all connected points with the exact same f value
 					Stack<Pair<Integer, Integer>> stack = new Stack<>();
-					java.util.List<Pair<Integer, Integer>> region = new java.util.ArrayList<>();
+					List<Pair<Integer, Integer>> region = new ArrayList<>();
 					stack.push(new Pair<>(i, j));
 
 					while (!stack.isEmpty()) {
@@ -354,33 +367,35 @@ public class Fill2D implements Serializable{
 						// Bounds check
 						if (x < 0 || x >= this.map.length || y < 0 || y >= this.map[0].length)
 							continue;
-						// Skip already visited, boundary, or different f value
+						// Skip already visited, boundary, or different f value (strict equality)
 						if (this.map[x][y].plateau != 0)
 							continue;
 						if (this.map[x][y].color == 0)
 							continue;
-						if (Math.abs(this.map[x][y].f - seedF) > epsilon)
+						if (this.map[x][y].f != seedF)
 							continue;
 
-						// Mark as visited (temporarily use negative counter)
+						// Mark as visited (temporarily use -1)
 						this.map[x][y].plateau = -1;
 						region.add(new Pair<>(x, y));
 
-						// Push 4 neighbors
+						// Push 4 neighbours
 						stack.push(new Pair<>(x - 1, y));
 						stack.push(new Pair<>(x + 1, y));
 						stack.push(new Pair<>(x, y - 1));
 						stack.push(new Pair<>(x, y + 1));
 					}
 
-					// Only assign a plateau ID if region has more than 1 point (actual flat area)
-					if (region.size() > 1) {
+					// Assign plateau ID only if region has more than minPlateauSize cells.
+					// minPlateauSize=1 → region.size() > 1 (at least 2 cells, i.e. same as original behaviour).
+					// minPlateauSize=N → only regions larger than N cells are marked.
+					if (region.size() > minPlateauSize) {
 						for (Pair<Integer, Integer> p : region) {
 							this.map[p.getFirst()][p.getSecond()].plateau = plateauCounter;
 						}
 						plateauCounter++;
 					} else {
-						// Single point - not a plateau, reset to 0
+						// Too small — not a plateau, reset to 0
 						for (Pair<Integer, Integer> p : region) {
 							this.map[p.getFirst()][p.getSecond()].plateau = 0;
 						}
