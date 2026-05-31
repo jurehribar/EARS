@@ -133,7 +133,7 @@ compileTestKotlin {
 //   gradlew runHeatMap_Easom runFill_Easom runMeasure_Easom
 // Edit config.properties to change problems/resolution/dirs — no recompile needed.
 
-def attractionJvmArgs = ['-Xmx24g', '-Xms4g']
+def attractionJvmArgs = ['-Xmx16g', '-Xms4g']
 
 if (file('config.properties').exists()) {
     def pipelineProps = new Properties()
