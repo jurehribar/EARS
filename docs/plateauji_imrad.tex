@@ -17,9 +17,10 @@
 \graphicspath{{Pics/}{docs/Pics/}}
 \hypersetup{hidelinks}
 
-\title{Razširitev metode za analizo atrakcijskih bazenov z zaznavanjem platojev}
+\title{Razširitev metode za analizo atrakcijskih bazenov z zaznavanjem platojev\\[0.5em]
+\large Predmet: IRD s seminarjem, prof. dr. Matej Črepinšek}
 \author{Jure Hribar}
-\date{\today}
+\date{junij 2026}
 
 \begin{document}
 
@@ -41,37 +42,35 @@ Platoji so lahko koristni predvsem zato, ker pokažejo dele iskalnega prostora, 
 
 Pri optimizacijskih problemih z omejitvami lahko omejitve ustvarijo območja, kjer je veliko točk enako kaznovanih ali imajo podobno vrednost kazenske funkcije. Če se kršitve omejitev pretvorijo v kazensko funkcijo, lahko nastanejo “ravne” ali skoraj ravne regije, kjer vse rešitve dobijo enako kazen. Zaznavanje platojev bi zato lahko pomagalo razumeti, ali algoritem raziskuje rob dopustnega območja, se zatakne v nedopustni regiji, ali pa se premika po območju, kjer ga penalizacija ne vodi več dovolj informativno.
 
-\section{Metode}
+\section{Metoda}
 
 \subsection{Vhodni podatki in diskretizacija}
 
-Analiza temelji na dvodimenzionalni toplotni karti funkcije. Iskalni prostor je diskretiziran v pravokotno mrežo
+Analiza temelji na dvodimenzionalni 'Heatmap' karti funkcije. Iskalni prostor je diskretiziran v pravokotno mrežo. Število korakov je vhodni parameter. 
 \[
 G = \{(i,j) \mid 0 \le i < n,\; 0 \le j < m\},
 \]
-kjer vsaka celica vsebuje koordinati \((x_1,x_2)\), vrednost funkcije \(f(x_1,x_2)\), identifikator atrakcijskega bazena in identifikator platoja. V implementaciji je to predstavljeno z razredom \texttt{Point}, ki hrani vrednosti \texttt{x1}, \texttt{x2}, \texttt{f}, \texttt{color} in \texttt{plateau}.
-
-Toplotna karta se prebere iz stisnjenega objekta \texttt{HeatMap2D}. Razred \texttt{Fill2D} nato nad mrežo izvede označevanje mej, barvanje atrakcijskih bazenov in zaznavanje platojev. Prag za minimalno velikost platoja je nastavljen s parametrom \texttt{minPlateauSize}, ki je definiran v konfiguracijski datoteki \texttt{config.properties}.
+kjer vsaka celica vsebuje koordinati \((x_1,x_2)\), vrednost funkcije \(f(x_1,x_2)\), identifikator atrakcijskega bazena in identifikator platoja. 
 
 \subsection{Zaznavanje mej med bazeni in platoji}
 
-Osnovna metoda za zaznavanje mej med bazeni je bila razširjena v delu kode, ki obravnava meje platojev (\texttt{makeBoundariesPlateau}). Prejšnji pristop je zaznaval predvsem lokalne vrhove oziroma točke, kjer je vrednost trenutne celice večja od vrednosti sosedov v vodoravni, navpični ali diagonalni smeri. Pri platojih pa meja pogosto nastane v vzorcu, kjer imata dve sosednji celici enako vrednost, naslednja celica pa je višja ali nižja.
+Osnovna metoda za zaznavanje mej med bazeni je bila razširjena tako, da obravnava tudi meje platojev. (\texttt{makeBoundariesPlateau}). Prejšnji pristop je zaznaval izključno lokalne vrhove oziroma točke, kjer je vrednost trenutne celice večja od vrednosti sosedov v vodoravni, navpični ali diagonalni smeri. Pri platojih pa meja nastane v vzorcu, kjer imata dve sosednji celici enako vrednost, naslednja celica pa je višja ali nižja.
 
 Zato razširjeni algoritem v vodoravni in navpični smeri preverja vzorce oblike:
 \[
 a = b < c,\qquad a = b > c,\qquad a < b = c,\qquad a > b = c,\qquad a < b > c.
 \]
+kjer je \textit{b} trenutna točka.
 Ti primeri pokrijejo prehode iz neravnega območja v ravno območje, iz ravnega območja v neravno območje in klasičen vrh med dvema nižjima sosedoma. Celice, ki ustrezajo tem pogojem, se označijo kot meja z vrednostjo \texttt{color = 0}. Na ta način kasnejši algoritem barvanja atrakcijskih bazenov ne poveže območij, ki jih mora ločiti meja platoja.
 
 \subsection{Barvanje atrakcijskih bazenov}
 
-Po označitvi mej se nad preostalimi celicami izvede barvanje povezanih komponent. Implementacija podpira pristopa \texttt{scanline} in \texttt{boundary}; v eksperimentalnem cevovodu se uporablja \texttt{scanline}. Vsaka nepobarvana celica, ki ni meja, se uporabi kot seme novega bazena. Algoritem nato razširi trenutno barvo po povezanem območju, dokler ne doseže mejnih celic.
+Po označitvi mej se nad preostalimi celicami izvede barvanje povezanih komponent. Vsaka nepobarvana celica, ki ni meja, se uporabi kot seme novega bazena. Algoritem nato razširi trenutno barvo po povezanem območju, dokler ne doseže mejnih celic. Ta del ostaja enak kot prejšnja implementacija.
 
-Identifikator bazena je shranjen v polju \texttt{color}. Vrednost \texttt{0} pomeni mejo, pozitivne vrednosti pa predstavljajo posamezne atrakcijske bazene. Ta del ostaja osnova celotnega pristopa, saj zaznavanje platojev poteka šele po tem, ko so meje in bazeni že določeni.
 
 \subsection{Identifikacija platojev}
 
-Plato je v tej nalogi definiran kot povezana regija diskretne mreže, v kateri imajo vse celice enako vrednost funkcije in ki je dovolj velika ter dovolj široka, da ni le artefakt diskretizacije. Funkcija \texttt{detectPlateaus} zato išče povezane komponente celic z enako vrednostjo \(f\), pri čemer uporablja 4-sosedstvo:
+Plato je v tej nalogi definiran kot povezana regija diskretne mreže, v kateri imajo vse celice enako vrednost funkcije in ki je dovolj velika ter dovolj široka, da ni le posledica diskretizacije. Funkcija \texttt{detectPlateaus} zato išče povezane komponente celic z enako vrednostjo \(f\), pri čemer uporablja 4-sosedstvo:
 \[
 N_4(i,j)=\{(i-1,j),(i+1,j),(i,j-1),(i,j+1)\}.
 \]
@@ -80,16 +79,16 @@ Algoritem poteka v naslednjih korakih:
 
 \begin{enumerate}[label=\arabic*.]
     \item Preleti vse celice mreže.
-    \item Za vsako še neobiskano celico, ki ni meja, izbere vrednost \texttt{seedF}.
+    \item Za vsako še neobiskano celico, ki ni meja, izbere vrednost \texttt{seedF} (vrednost funckije v tej točki).
     \item S skladom izvede poplavljanje po 4-sosedstvu in v trenutno regijo doda samo celice z enako vrednostjo funkcije \texttt{seedF}.
-    \item Za najdeno regijo izračuna velikost notranjega jedra.
-    \item Regijo označi kot plato samo, če je velikost jedra večja od \texttt{minPlateauSize}.
+    \item Za najdeno regijo izračuna velikost površine.
+    \item Regijo označi kot plato samo, če je velikost površine večja od \texttt{minPlateauSize}.
 \end{enumerate}
 
-Med izvajanjem se celice začasno označijo z vrednostjo \texttt{plateau = -1}. S tem se prepreči, da bi bila ista celica večkrat dodana na sklad. Regije, ki niso sprejete kot plato, dobijo vrednost \texttt{plateau = -2}; pozitivne vrednosti \texttt{plateau} pa predstavljajo identifikatorje zaznanih platojev.
 
 \subsection{Izločanje majhnih pik in tankih črt}
 
+Zaradi diskretizacije se pri določenih funkcijah katerih vrednost pada zelo počasi pojavljajo lažni mini platoji. To sem skušal rešiti z izločanjem tankih črt (en pixel) in platojev, ki so 'premajhni'.
 Samo preverjanje števila celic v povezani regiji ni dovolj. Tanka ravna črta je lahko dolga in zato vsebuje veliko celic, vendar ne predstavlja pravega dvodimenzionalnega platoja. Zato algoritem ne uporablja neposredno velikosti celotne regije, temveč velikost njenega notranjega jedra.
 
 Celica pripada jedru regije samo, če ima vse štiri ortogonalne sosede v isti regiji. Formalno je celica \((i,j)\) jedrna celica, če velja:
@@ -103,22 +102,10 @@ Ta postopek deluje kot ena iteracija morfološke erozije. Posamezne pike, ozke s
 |core(R)| > \texttt{minPlateauSize}.
 \]
 
-\subsection{Pomnilniška učinkovitost}
-
-Implementacija uporablja dve vnaprej alocirani celoštevilski tabeli: eno za sklad pri poplavljanju in eno za celice trenutne regije. Celica \((x,y)\) je zakodirana kot eno število
-\[
-cell = x \cdot m + y.
-\]
-S tem se izognemo ustvarjanju velikega števila objektov, kot so pari koordinat ali množice. Tak pristop je posebej pomemben pri visokih ločljivostih, na primer pri mrežah velikosti \(10000 \times 10000\), kjer bi objektne strukture povzročile zelo veliko porabo pomnilnika.
 
 \subsection{Vizualizacija}
 
-Razred \texttt{Measure} je bil razširjen tako, da poleg slike atrakcijskih bazenov ustvari še ločeno sliko platojev. V prvem izrisu so prikazani atrakcijski bazeni, pri čemer so meje obarvane črno. V drugem izrisu so meje prav tako črne, zaznani platoji pa dobijo ločene barve. Celice, ki ne pripadajo nobenemu platoju, so prikazane s svetlo sivo barvo. Slika platojev se shrani z imenom oblike
-\[
-\texttt{<ime\_problema>\_plateaus.png}.
-\]
-
-Za barvanje platojev se uporablja deterministično razporejanje odtenkov z zlatim razmerjem, kar zmanjša verjetnost, da bi sosednji platoji dobili vizualno preveč podobne barve. Izris vključuje tudi legendo z oznakami \texttt{P1}, \texttt{P2}, itd.
+Razred \texttt{Measure} je bil razširjen tako, da poleg slike atrakcijskih bazenov ustvari še ločeno sliko platojev. V prvem izrisu so prikazani atrakcijski bazeni in platoji na isti sliki in so obarvani na enak način, pri čemer so meje obarvane črno. Ker na prvem prikazu ne moremo zagotovo ločiti kaj je plato in kaj atrakcijski bazen, sem implementiral še drugi izris, kjer so platoji obarvani, medtem ko so vsi atrakcijski bazeni sive barve. 
 
 \section{Rezultati}
 
@@ -130,15 +117,14 @@ Pri funkcijah s platoji pričakujemo, da bo nov algoritem:
     \item zaznal povezane regije z enako vrednostjo funkcije,
     \item ločil platoje od okoliških atrakcijskih bazenov,
     \item izločil osamljene točke in majhne regije,
-    \item zavrnil enopikselske ravne črte, ker nimajo notranjega jedra,
     \item ustvaril ločen slikovni prikaz samo za platoje.
 \end{itemize}
 
-V konfiguraciji je parameter \texttt{minPlateauSize} nastavljen na vrednost 5. To pomeni, da mora imeti kandidatna regija več kot pet jedrnih celic, da je označena kot plato. Višja vrednost parametra omogoča strožje filtriranje, nižja vrednost pa bolj občutljivo zaznavanje manjših platojev.
+V konfiguraciji je parameter \texttt{minPlateauSize} nastavljen na vrednost 5. To pomeni, da mora imeti kandidatna regija več kot pet jedrnih celic, da je označena kot plato. Višja vrednost parametra omogoča strožje filtriranje, nižja vrednost pa bolj občutljivo zaznavanje manjših platojev. Za moje primere sem uporabljal 10.000 korakov. To pomeni da smo imeli 100.000.000 točk v dvodimenzionalni mreži.
 
 \subsection{\texttt{InvertedHemispheres}}
 
-Funkcija \texttt{InvertedHemispheres} opisuje dve obrnjeni polkrogli oziroma dve vdolbini v sicer ravni osnovni ploskvi. Pri privzetih parametrih \(B=2\), \(a=2\) in \(r=1.7\) je definirana kot
+Funkcija \texttt{InvertedHemispheres} opisuje dve obrnjeni polkrogli oziroma dve vdolbini v sicer ravni osnovni ploskvi. Je nek osnovni preprost primer na katerem sem začel. Pri privzetih parametrih \(B=2\), \(a=2\) in \(r=1.7\) je definirana kot
 \[
 f(x,y)=B-\max\left(0,\sqrt{r^2-(x-a)^2-y^2},\sqrt{r^2-(x+a)^2-y^2}\right),
 \]
@@ -151,7 +137,7 @@ pri čemer je posamezen koren upoštevan samo znotraj pripadajoče krožnice, zu
 \label{fig:inverted-plot}
 \end{figure}
 
-Na sliki~\ref{fig:inverted-basins} sta vidna dva glavna atrakcijska bazena, ki ustrezata obema vdolbinama. Črna meja označuje ločnico med območjema, iz katerih lokalno gibanje vodi v eno ali drugo minimumsko območje.
+Na sliki~\ref{fig:inverted-basins} sta vidna dva glavna atrakcijska bazena, ki ustrezata obema vdolbinama.
 
 \begin{figure}[htbp]
 \centering
@@ -180,6 +166,7 @@ x^2+y^2, & \text{sicer}.
 \end{cases}
 \]
 Na sliki~\ref{fig:sphere-plot} je zato poleg klasične parabolične oblike vidno ravno območje, ki nastane, kadar ena izmed koordinat pade v interval \([10,17]\).
+Tako sem želel testirat prehode funkcijske vrednosti iz več na manj ter obratno v vseh smereh. 
 
 \begin{figure}[htbp]
 \centering
@@ -197,7 +184,7 @@ Slika~\ref{fig:sphere-basins} prikazuje, da dodani plato vpliva na strukturo mej
 \label{fig:sphere-basins}
 \end{figure}
 
-Na sliki~\ref{fig:sphere-plateaus} je plato jasno ločen od ostalega prostora. Ker gre za široko regijo z notranjim jedrom, ga filter \texttt{minPlateauSize} sprejme kot pravi plato.
+Na sliki~\ref{fig:sphere-plateaus} je plato jasno ločen od ostalega prostora. 
 
 \begin{figure}[htbp]
 \centering
@@ -239,7 +226,7 @@ Na sliki~\ref{fig:rastrigin-basins} je razvidna razdrobljena struktura atrakcijs
 \label{fig:rastrigin-basins}
 \end{figure}
 
-Slika~\ref{fig:rastrigin-plateaus} pokaže, kateri izmed teh ravnih območij so po kriteriju notranjega jedra prepoznani kot platoji. Ker so platoji majhni, je njihova zaznava posebej odvisna od ločljivosti mreže in parametra \texttt{minPlateauSize}.
+Slika~\ref{fig:rastrigin-plateaus} pokaže, kateri izmed teh ravnih območij so prepoznani kot platoji. 
 
 \begin{figure}[htbp]
 \centering
@@ -258,7 +245,7 @@ platoje pa tvori z odrezom pri pragu \(c\). Pri privzeti vrednosti \(c=0.9\) je
 \[
 f(x,y)=\min(\cos(x)\cos(y),c).
 \]
-Platoji zato nastanejo okoli vrhov kosinusne površine, meja platoja pa sledi nivojnici \(g(x,y)=c\). Slika~\ref{fig:cosine-plot} prikazuje gladko periodično strukturo s sploščenimi vrhovi.
+Platoji zato nastanejo okoli vrhov kosinusne površine, meja platoja pa sledi nivoju \(g(x,y)=c\). Slika~\ref{fig:cosine-plot} prikazuje gladko periodično strukturo s sploščenimi vrhovi. Testiral sem ali pravilno prepoznam tudi platoje ki niso kvadratne oblike.
 
 \begin{figure}[htbp]
 \centering
@@ -267,7 +254,7 @@ Platoji zato nastanejo okoli vrhov kosinusne površine, meja platoja pa sledi ni
 \label{fig:cosine-plot}
 \end{figure}
 
-Na sliki~\ref{fig:cosine-basins} so vidna periodično razporejena območja atrakcije. Ker so platoji ustvarjeni okoli vrhov, njihove meje vplivajo na delitev prostora v okolici ponavljajočih se struktur.
+Na sliki~\ref{fig:cosine-basins} so vidna periodično razporejena območja atrakcije. 
 
 \begin{figure}[htbp]
 \centering
@@ -301,6 +288,7 @@ x+(y-2), & x<3,\ y>5,\\
 \end{cases}
 \]
 z dodatnimi robnimi primeri za pasova \(x>5,\,3\le y\le5\) in \(3\le x\le5,\,y>5\). Slika~\ref{fig:piecewise-plot} pokaže ravno kvadratno območje in linearne prehode v okolici.
+Testirati sem želel kako zaznava platojev deluje na linearni površini.
 
 \begin{figure}[htbp]
 \centering
@@ -318,7 +306,7 @@ Na sliki~\ref{fig:piecewise-basins} je razvidno, da kosovno linearni prehodi ust
 \label{fig:piecewise-basins}
 \end{figure}
 
-Slika~\ref{fig:piecewise-plateaus} potrdi zaznavo glavnega kvadratnega platoja. Ker ima plato veliko notranjih celic, ga jedrni kriterij robustno ohrani.
+Slika~\ref{fig:piecewise-plateaus} potrdi zaznavo glavnega kvadratnega platoja. 
 
 \begin{figure}[htbp]
 \centering
@@ -329,7 +317,7 @@ Slika~\ref{fig:piecewise-plateaus} potrdi zaznavo glavnega kvadratnega platoja. 
 
 \subsection{\texttt{TanhRadialStep}}
 
-Funkcija \texttt{TanhRadialStep} je gladka radialna stopnica oziroma vdolbina, določena z razdaljo od izhodišča. Pri privzetih parametrih \(h=10\), \(k=2\) in \(r=3\) je definirana kot
+Funkcija \texttt{TanhRadialStep} je gladka vdolbina, določena z razdaljo od izhodišča. Pri privzetih parametrih \(h=10\), \(k=2\) in \(r=3\) je definirana kot
 \[
 f(x,y)=-\frac{h}{2}\left(1-\tanh\left(k\left(\sqrt{x^2+y^2}-r\right)\right)\right).
 \]
@@ -351,33 +339,44 @@ Na sliki~\ref{fig:tanh-basins} se pokaže radialna struktura funkcije. Ker funkc
 \label{fig:tanh-basins}
 \end{figure}
 
-Slika~\ref{fig:tanh-plateaus} je pomembna kot prikaz omejitve metode. Zaznane ravne regije pri tej funkciji niso nujno pravi analitični platoji, temveč so lahko posledica zelo postopnega padca funkcije, končne ločljivosti mreže in zaokroževanja vrednosti pri računanju. To pomeni, da diskretni algoritem lahko najde navidezne platoje tam, kjer je zvezna funkcija le zelo položna. Primer zato kaže, da je treba rezultate pri gladkih funkcijah interpretirati skupaj z obliko funkcije in po potrebi uvesti dodatne kriterije, na primer toleranco, lokalno varianco ali preverjanje gradienta.
+Slika~\ref{fig:tanh-plateaus} je pomembna kot prikaz omejitve metode. Zaznane ravne regije pri tej funkciji niso pravi platoji, temveč so posledica zelo postopnega padca funkcije, končne ločljivosti mreže in zaokroževanja vrednosti pri računanju. To pomeni, da diskretni algoritem lahko najde navidezne platoje tam, kjer je zvezna funkcija le zelo položna. Primer zato kaže, da je treba rezultate pri gladkih funkcijah interpretirati skupaj z obliko funkcije in po potrebi uvesti dodatne kriterije, na primer toleranco, lokalno varianco ali preverjanje gradienta. 
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.78\textwidth]{TanhRadialStep_plateaus.png}
-\caption{Zaznani platoji funkcije \texttt{TanhRadialStep}; ti lahko predstavljajo diskretizacijske artefakte in ne pravih analitičnih platojev.}
+\caption{Zaznani platoji funkcije \texttt{TanhRadialStep}; ti predstavljajo diskretizacijske artefakte in ne pravih analitičnih platojev.}
 \label{fig:tanh-plateaus}
 \end{figure}
 
 \section{Razprava}
 
-Glavna prednost razširitve je, da obstoječi cevovod za atrakcijske bazene ni bil zamenjan, temveč nadgrajen. Meje med bazeni se še vedno določijo pred barvanjem, dodatni pogoji v \texttt{makeBoundariesPlateau} pa omogočijo, da se upoštevajo tudi prehodi v ravna območja. Zaznavanje platojev je izvedeno po barvanju bazenov, zato lahko sistem za vsako celico hrani tako informacijo o bazenu kot informacijo o platoju.
+Metoda za računanje atrakcijskih bazenov je nadgrajena, da prepozna tudi platoje. Meje med bazeni se še vedno določijo pred barvanjem, dodatni pogoji pri iskanju meja pa omogočijo, da se upoštevajo tudi prehodi v ravna območja. Zaznavanje platojev je izvedeno po barvanju bazenov, zato lahko sistem za vsako celico hrani tako informacijo o bazenu kot informacijo o platoju.
 
-Pomembna odločitev je uporaba jedra regije namesto same velikosti regije. Ta odločitev neposredno naslovi problem lažno pozitivnih zaznav, saj enopikselske črte in posamezne točke nimajo notranjosti. Metoda zato bolje ustreza intuitivni predstavi platoja kot dvodimenzionalnega ravnega območja.
-
-Omejitev pristopa je, da primerjava vrednosti funkcije trenutno temelji na natančni enakosti tipa \texttt{double}. To je primerno za funkcije, kjer so platoji ustvarjeni z eksplicitnim prirejanjem iste vrednosti, na primer z odrezom funkcije ali kosovno definicijo. Pri funkcijah, kjer zaradi numeričnega šuma vrednosti na platoju niso popolnoma enake, bi bilo smiselno dodati toleranco \(\varepsilon\), tako da bi celici obravnavali kot enaki, kadar velja
+Omejitev pristopa je, da primerjava vrednosti funkcije trenutno temelji na natančni enakosti tipa \texttt{double}. To je primerno za funkcije, kjer so platoji ustvarjeni z eksplicitnim prirejanjem iste vrednosti, na primer z odrezom funkcije ali kosovno definicijo. Pri funkcijah, kjer vrednosti padajo zelo počasi, se bo slej kot prej zgodilo da naletimo na območje z enakimi vrednostmi zaradi diskretizacije. Taka funkcija bo padala stopničasto med padci pa bo več sitih vrednosti funkcije. To so obroči na sliki~\ref{fig:tanh-plateaus}. 
+Morda bi bilo smiselno dodati toleranco \(\varepsilon\), tako da bi celici obravnavali kot enaki, kadar velja
 \[
 |f_a - f_b| \le \varepsilon.
 \]
 
-Druga omejitev je odvisnost od ločljivosti mreže. Plato, ki je v zveznem prostoru majhen, je lahko pri prenizki ločljivosti vzorčen le kot nekaj pik ali črta in bo zato pravilno zavrnjen glede na diskretno sliko, čeprav v zvezni funkciji obstaja. Zato je izbira ločljivosti in parametra \texttt{minPlateauSize} del metodološke nastavitve eksperimenta.
+Zavedati pa se seveda moramo da vsako predpostavljanje glede velikosti platoja, lahko izloči dejanske platoje. Zaradi diskretizacije je nemogoče ločiti med resničnimi 'malimi' platoji ali lažnimi zaradi zaokroževanja. Kar bo delovalo za nek primer, spet ne bo za nek drug.
+Plato, ki je v zveznem prostoru majhen, je lahko pri prenizki ločljivosti vzorčen le kot nekaj pik ali črta in bo zato pravilno zavrnjen glede na diskretno sliko, čeprav v zvezni funkciji obstaja. Zato je izbira ločljivosti in parametra \texttt{minPlateauSize} del metodološke nastavitve eksperimenta.
 
 \section{Zaključek}
 
-V nalogi je bila obstoječa analiza atrakcijskih bazenov razširjena z zaznavanjem platojev in mej med platoji ter bazeni. Razširitev vključuje dopolnjeno zaznavanje mej, novo funkcijo \texttt{detectPlateaus}, filtriranje majhnih in pretankih regij z jedrom po 4-sosedstvu ter ločen izris platojev v razredu \texttt{Measure}. S tem je analiza bolj primerna za optimizacijske funkcije, ki vsebujejo ravna območja in pri katerih samo barvanje atrakcijskih bazenov ne poda celotne slike strukture iskalnega prostora.
+V nalogi je bila obstoječa analiza atrakcijskih bazenov razširjena z zaznavanjem platojev in mej med platoji ter bazeni. Razširitev vključuje dopolnjeno zaznavanje mej, novo funkcijo \texttt{detectPlateaus}, filtriranje majhnih in pretankih regij ter ločen izris platojev. S tem je analiza bolj primerna za optimizacijske funkcije, ki vsebujejo ravna območja in pri katerih samo barvanje atrakcijskih bazenov ne poda celotne slike strukture iskalnega prostora.
 
 Nadaljnje delo lahko vključuje eksperimentalno primerjavo na več testnih funkcijah, uvedbo tolerance za primerjavo vrednosti funkcije, kvantitativno poročanje o velikostih platojev in povezavo zaznanih platojev z obnašanjem izbranih optimizacijskih algoritmov.
+
+
+Možne izboljšave:
+\begin{itemize}
+    \item Morda ločimo algoritma za iskanje meja pri platojih in atrakcijskih bazenih. Tako bi imeli dva tipa mej. S tem bi se izognili morebitnim nepravilnostim pri računanju atrakcijskih bazenov zaradi nepravilnih meja pridobljenih zaradi diskretizacije.
+    \item Lahko uvedbo toleranco za primerjavo vrednosti funkcije kot je opisano v prejšnjem poglavju
+    \item Uvedemo preverjanje oddaljenosti mej med seboj, da ne dobimo 'praznih' območij
+    \item pobrišemo meje med 'praznimi območji in jih združimo
+\end{itemize}
+
+Vse te možne izboljšave načeloma rešujejo precej majhen odstotek vzorčnih funkcij. Tako se tudi postavi vprašanje koliko smiselno je uvajat kompleksne razširitve za robne primere.
 
 \begin{thebibliography}{1}
 
