@@ -4,6 +4,7 @@ import java.util.*;
 public class PipelineConfig {
     public final int    resolution;
     public final int    minPlateauSize;
+    public final double plateauEpsilon;
     public final String heatmapDir;
     public final String scanlineDir;
     public final String picturesDir;
@@ -28,6 +29,7 @@ public class PipelineConfig {
     private PipelineConfig(Properties p) {
         resolution     = Integer.parseInt(p.getProperty("resolution",     "10000"));
         minPlateauSize = Integer.parseInt(p.getProperty("minPlateauSize", "1"));
+        plateauEpsilon = Double.parseDouble(p.getProperty("plateauEpsilon", "0.0"));
         heatmapDir     = p.getProperty("heatmapDir", "C:/Dev/TestEARS/HeatMaps");
         scanlineDir    = p.getProperty("scanlineDir", "C:/Dev/TestEARS/ScanLine");
         picturesDir    = p.getProperty("picturesDir", "C:/Dev/TestEARS/Pictures");

@@ -18,6 +18,7 @@ public class Fill2D implements Serializable{
 	public List<Double> upperBound; // higher bounds for each dimension
 
 	private int minPlateauSize = 1; // N: minimum cells for a region to be considered a plateau
+	private double plateauEpsilon = 0.0; // tolerance for f-value equality in makeBoundariesPlateau()
 
 
     public Fill2D() 
@@ -31,7 +32,7 @@ public class Fill2D implements Serializable{
     
     public Fill2D(String alg, String inputPathHeatmap, boolean smoothBoundaries) throws FileNotFoundException, ClassNotFoundException, IOException 
     {
-    	this(alg, inputPathHeatmap, smoothBoundaries, 5);
+    	this(alg, inputPathHeatmap, smoothBoundaries, 5, 0.0);
     }
 
     /**
@@ -41,12 +42,23 @@ public class Fill2D implements Serializable{
      */
     public Fill2D(String alg, String inputPathHeatmap, boolean smoothBoundaries, int minPlateauSize) throws FileNotFoundException, ClassNotFoundException, IOException
     {
-    	this.map = null;
-        this.step = null; 
+    	this(alg, inputPathHeatmap, smoothBoundaries, minPlateauSize, 0.0);
+    }
+
+    /**
+     * @param minPlateauSize  N — minimum number of connected same-f cells to be considered a plateau.
+     * @param plateauEpsilon  epsilon — |f_a - f_b| <= epsilon is treated as equal in makeBoundariesPlateau().
+     *                        0.0 → exact equality only (original behaviour).
+     */
+    public Fill2D(String alg, String inputPathHeatmap, boolean smoothBoundaries, int minPlateauSize, double plateauEpsilon) throws FileNotFoundException, ClassNotFoundException, IOException
+    {
+        this.map = null;
+        this.step = null;
         this.problemName = null;
         this.lowerBound = null;
         this.upperBound = null;
         this.minPlateauSize = minPlateauSize;
+        this.plateauEpsilon = plateauEpsilon;
     	System.out.println("Heatmap reading started.");
     	readCompressedHeatMapObject(inputPathHeatmap);
     	if(this.lowerBound == null || this.upperBound == null)
@@ -178,14 +190,21 @@ public class Fill2D implements Serializable{
 		*  c /‾
 		*  d \_
 		*  e /\
+		*
+		*  With epsilon: == means |diff| <= plateauEpsilon
+		*                <  means diff  >  plateauEpsilon
+		*                >  means diff  > plateauEpsilon  (sign flipped)
 		* */
+		final double eps = this.plateauEpsilon;
+
 		for(int i = 0; i < map.length; i++) {
 			for(int j = 1; j < map[0].length-1; j+=1) {
-				if((map[i][j-1].f == map[i][j].f && map[i][j].f < map[i][j+1].f) || //a
-                   (map[i][j-1].f == map[i][j].f && map[i][j].f > map[i][j+1].f) || //b
-                   (map[i][j-1].f < map[i][j].f && map[i][j].f == map[i][j+1].f) || //c
-                   (map[i][j-1].f > map[i][j].f && map[i][j].f == map[i][j+1].f) || //d
-				   (map[i][j-1].f < map[i][j].f && map[i][j].f > map[i][j+1].f))    //e
+				double fl = map[i][j-1].f, fc = map[i][j].f, fr = map[i][j+1].f;
+				if((Math.abs(fl-fc) <= eps && fc < fr - eps) || //a
+                   (Math.abs(fl-fc) <= eps && fc > fr + eps) || //b
+                   (fl < fc - eps  && Math.abs(fc-fr) <= eps) || //c
+                   (fl > fc + eps  && Math.abs(fc-fr) <= eps) || //d
+				   (fl < fc && fc > fr))                         //e
 				{
 					map[i][j].color = 0;
 				}
@@ -193,11 +212,12 @@ public class Fill2D implements Serializable{
 		}
 		for(int j = 0; j < map[0].length; j++) {
 			for(int i = 1; i < map.length-1; i+=1) {
-				if((map[i-1][j].f == map[i][j].f && map[i][j].f < map[i+1][j].f) || //a
-                   (map[i-1][j].f == map[i][j].f && map[i][j].f > map[i+1][j].f) || //b
-                   (map[i-1][j].f < map[i][j].f && map[i][j].f == map[i+1][j].f) || //c
-                   (map[i-1][j].f > map[i][j].f && map[i][j].f == map[i+1][j].f) || //d
-                   (map[i-1][j].f < map[i][j].f && map[i][j].f > map[i+1][j].f))    //e
+				double fu = map[i-1][j].f, fc = map[i][j].f, fd = map[i+1][j].f;
+				if((Math.abs(fu-fc) <= eps && fc < fd - eps) || //a
+                   (Math.abs(fu-fc) <= eps && fc > fd + eps) || //b
+                   (fu < fc - eps  && Math.abs(fc-fd) <= eps) || //c
+                   (fu > fc + eps  && Math.abs(fc-fd) <= eps) || //d
+                   (fu < fc && fc > fd))                //e
 				{
 					map[i][j].color = 0;
 				}
@@ -206,23 +226,12 @@ public class Fill2D implements Serializable{
 
 		for(int j = 1; j < map[0].length-1; j+=1) {
 			for(int i = 1; i < map.length-1; i+=1) {
-				//if there is peak on current diagonal
-				if(/*(map[i-1][j-1].f == map[i][j].f && map[i][j].f < map[i+1][j+1].f) || //a
-                   (map[i-1][j-1].f == map[i][j].f && map[i][j].f > map[i+1][j+1].f) || //b
-                   (map[i-1][j-1].f < map[i][j].f && map[i][j].f == map[i+1][j+1].f) || //c
-                   (map[i-1][j-1].f > map[i][j].f && map[i][j].f == map[i+1][j+1].f) || //d */
-                   (map[i-1][j-1].f < map[i][j].f && map[i][j].f > map[i+1][j+1].f))    //e
-				{
+				double fUL = map[i-1][j-1].f, fc = map[i][j].f, fDR = map[i+1][j+1].f;
+				double fUR = map[i-1][j+1].f, fDL = map[i+1][j-1].f;
+				if(fUL < fc && fc > fDR)   //
 					map[i][j].color = 0;
-				}
-				if(/*(map[i-1][j+1].f == map[i][j].f && map[i][j].f < map[i+1][j-1].f) || //a
-                   (map[i-1][j+1].f == map[i][j].f && map[i][j].f > map[i+1][j-1].f) || //b
-                   (map[i-1][j+1].f < map[i][j].f && map[i][j].f == map[i+1][j-1].f) || //c
-                   (map[i-1][j+1].f > map[i][j].f && map[i][j].f == map[i+1][j-1].f) || //d */
-                   (map[i-1][j+1].f < map[i][j].f && map[i][j].f > map[i+1][j-1].f))    //e
-				{
+				if(fUR < fc && fc > fDL)   //
 					map[i][j].color = 0;
-				}
 			}
 		}
 	}
@@ -341,7 +350,19 @@ public class Fill2D implements Serializable{
 		}
 	}
 	
+	/**
+	 * Detects plateaus using this.plateauEpsilon, comparing each neighbour against seedF (safe, no creep).
+	 */
 	public void detectPlateaus() {
+		detectPlateaus(this.plateauEpsilon, false);
+	}
+
+	/**
+	 * @param eps            tolerance: |f_neighbour - reference| <= eps → treated as same plateau
+	 * @param compareToSeed  true  → Option A: always compare neighbour against seedF (no creep)
+	 *                       false → Option B: compare neighbour against the current cell's f (can creep)
+	 */
+	public void detectPlateaus(double eps, boolean compareToSeed) {
 		if (this.map == null)
 			return;
 
@@ -375,13 +396,11 @@ public class Fill2D implements Serializable{
 						int cell = stackArr[--stackTop];
 						int x    = cell / cols;
 						int y    = cell % cols;
+						double refF = compareToSeed ? seedF : this.map[x][y].f;
 
-						// Helper: push neighbour (nx, ny) if it qualifies and is not yet claimed.
-						// Pre-marking (plateau = -1) at push time ensures each cell is pushed at most once,
-						// bounding the stack to at most rows*cols entries.
 						if (x > 0) {
 							int nx = x - 1;
-							if (this.map[nx][y].plateau == 0 && this.map[nx][y].color != 0 && this.map[nx][y].f == seedF) {
+							if (this.map[nx][y].plateau == 0 && this.map[nx][y].color != 0 && Math.abs(this.map[nx][y].f - refF) <= eps) {
 								this.map[nx][y].plateau  = -1;
 								stackArr[stackTop++]     = nx * cols + y;
 								regionArr[regionSize++]  = nx * cols + y;
@@ -389,7 +408,7 @@ public class Fill2D implements Serializable{
 						}
 						if (x < rows - 1) {
 							int nx = x + 1;
-							if (this.map[nx][y].plateau == 0 && this.map[nx][y].color != 0 && this.map[nx][y].f == seedF) {
+							if (this.map[nx][y].plateau == 0 && this.map[nx][y].color != 0 && Math.abs(this.map[nx][y].f - refF) <= eps) {
 								this.map[nx][y].plateau  = -1;
 								stackArr[stackTop++]     = nx * cols + y;
 								regionArr[regionSize++]  = nx * cols + y;
@@ -397,7 +416,7 @@ public class Fill2D implements Serializable{
 						}
 						if (y > 0) {
 							int ny = y - 1;
-							if (this.map[x][ny].plateau == 0 && this.map[x][ny].color != 0 && this.map[x][ny].f == seedF) {
+							if (this.map[x][ny].plateau == 0 && this.map[x][ny].color != 0 && Math.abs(this.map[x][ny].f - refF) <= eps) {
 								this.map[x][ny].plateau  = -1;
 								stackArr[stackTop++]     = x * cols + ny;
 								regionArr[regionSize++]  = x * cols + ny;
@@ -405,7 +424,7 @@ public class Fill2D implements Serializable{
 						}
 						if (y < cols - 1) {
 							int ny = y + 1;
-							if (this.map[x][ny].plateau == 0 && this.map[x][ny].color != 0 && this.map[x][ny].f == seedF) {
+							if (this.map[x][ny].plateau == 0 && this.map[x][ny].color != 0 && Math.abs(this.map[x][ny].f - refF) <= eps) {
 								this.map[x][ny].plateau  = -1;
 								stackArr[stackTop++]     = x * cols + ny;
 								regionArr[regionSize++]  = x * cols + ny;

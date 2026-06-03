@@ -23,13 +23,15 @@ public class TestFill2D {
         if (!directory.exists()) directory.mkdirs();
 
         System.out.println("Running scanline fill for: " + problem.getName()
-                + "  minPlateauSize=" + config.minPlateauSize);
+                + "  minPlateauSize=" + config.minPlateauSize
+                + "  plateauEpsilon=" + config.plateauEpsilon);
 
         Fill2D fill2D = new Fill2D(
                 "scanline",
                 config.heatmapDir + "/" + problem.getName() + "Compressed.object",
                 true,
-                config.minPlateauSize);
+                config.minPlateauSize,
+                config.plateauEpsilon);
 
         fill2D.writeCompressedThisToFile(config.scanlineDir + "/" + problem.getName() + "Compressed.object");
         fill2D.writeFillMapValues(config.scanlineDir + "/" + problem.getName() + ".data");
