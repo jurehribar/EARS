@@ -8,9 +8,7 @@ import java.util.Collections;
 /**
  * PiecewiseLinear1D_Y - 2D problem where the fitness depends only on y
  *
- * This is the y-flipped version of PiecewiseLinear1D.
- * The function is piecewise linear with a flat plateau:
- *
+  *
  *   F(x,y) = 10 - y,   0 <= y < 4    (decreasing from 10 to 6)
  *          = 6,         4 <= y <= 5   (flat PLATEAU)
  *          = 11 - y,   5 <  y <= 10  (decreasing from 6 to 1)
