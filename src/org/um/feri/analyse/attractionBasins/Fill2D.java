@@ -191,9 +191,8 @@ public class Fill2D implements Serializable{
 		*  d \_
 		*  e /\
 		*
-		*  With epsilon: == means |diff| <= plateauEpsilon
-		*                <  means diff  >  plateauEpsilon
-		*                >  means diff  > plateauEpsilon  (sign flipped)
+		*  With epsilon: == -> |diff| <= plateauEpsilon
+		*
 		* */
 		final double eps = this.plateauEpsilon;
 
