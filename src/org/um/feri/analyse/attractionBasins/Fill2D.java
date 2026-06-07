@@ -35,12 +35,7 @@ public class Fill2D implements Serializable{
     	this(alg, inputPathHeatmap, smoothBoundaries, 5, 0.0);
     }
 
-    /**
-     * @param minPlateauSize  N — minimum number of connected same-f cells to be considered a plateau.
-     *                        N=1 → same behaviour as before (region.size() > 1, i.e. at least 2 cells).
-     *                        N=5 → only regions with more than 5 cells are marked as plateaus.
-     */
-    public Fill2D(String alg, String inputPathHeatmap, boolean smoothBoundaries, int minPlateauSize) throws FileNotFoundException, ClassNotFoundException, IOException
+      public Fill2D(String alg, String inputPathHeatmap, boolean smoothBoundaries, int minPlateauSize) throws FileNotFoundException, ClassNotFoundException, IOException
     {
     	this(alg, inputPathHeatmap, smoothBoundaries, minPlateauSize, 0.0);
     }
@@ -48,7 +43,7 @@ public class Fill2D implements Serializable{
     /**
      * @param minPlateauSize  N — minimum number of connected same-f cells to be considered a plateau.
      * @param plateauEpsilon  epsilon — |f_a - f_b| <= epsilon is treated as equal in makeBoundariesPlateau().
-     *                        0.0 → exact equality only (original behaviour).
+     *                        0.0 → exact equality only.
      */
     public Fill2D(String alg, String inputPathHeatmap, boolean smoothBoundaries, int minPlateauSize, double plateauEpsilon) throws FileNotFoundException, ClassNotFoundException, IOException
     {
