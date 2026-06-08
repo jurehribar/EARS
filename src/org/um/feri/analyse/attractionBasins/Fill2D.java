@@ -105,8 +105,8 @@ public class Fill2D implements Serializable{
 		try (BufferedWriter dataWriter = new BufferedWriter(new FileWriter(outputPath))) {
 			for (int i = 0; i < this.map.length; i++) {
 				for (int j = 0; j < this.map[i].length; j++) {
-					dataWriter.write(this.map[i][j].x1 + " " + this.map[i][j].x2 + " " + this.map[i][j].color+"\n");
-				}	
+					dataWriter.write(this.map[i][j].x1 + " " + this.map[i][j].x2 + " " + this.map[i][j].color + " " + this.map[i][j].plateau + "\n");
+				}
 			}
 			dataWriter.close();
 		} catch (Exception e) {
