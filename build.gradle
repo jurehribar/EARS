@@ -192,6 +192,44 @@ if (file('config.properties').exists()) {
                 dependsOn "runHeatMap_${problemName}", "runFill_${problemName}", "runMeasure_${problemName}"
         }
     }
+
+    // ── Combined (in-memory) tasks — no intermediate files written ────────────
+    // Each problem gets a single-JVM task that runs HeatMap → Fill → Measure
+    // entirely in memory. Only the two PNG images are written to disk.
+    // Usage:
+    //   gradlew runCombinedTest_Rastrigin
+    //   gradlew runAllCombinedTests
+    def prevCombinedTask = null
+
+    problemEntries.each { entry ->
+        entry = entry.trim()
+        if (entry.isEmpty()) return
+        def parts       = entry.split(':')
+        def problemName = parts[0].trim()
+        def problemDims = parts.length > 1 ? parts[1].trim() : '2'
+        def problemArgs = attractionJvmArgs + ["-DproblemName=${problemName}", "-DproblemDims=${problemDims}"]
+
+        def combinedTask = task("runCombinedTest_${problemName}", type: JavaExec) {
+            group       = 'attraction basins'
+            description = "Run full in-memory pipeline (HeatMap+Fill+Measure) for ${problemName} — produces only PNG images"
+            mainClass   = 'org.um.feri.analyse.attractionBasins.CombinedTest'
+            classpath   = sourceSets.main.runtimeClasspath
+            jvmArgs     = problemArgs
+            if (prevCombinedTask != null) mustRunAfter prevCombinedTask
+        }
+        prevCombinedTask = combinedTask
+    }
+
+    task runAllCombinedTests {
+        group       = 'attraction basins'
+        description = 'Runs the combined in-memory pipeline for every problem in config.properties.'
+        problemEntries.each { entry ->
+            def problemName = entry.trim().split(':')[0].trim()
+            if (!problemName.isEmpty())
+                dependsOn "runCombinedTest_${problemName}"
+        }
+    }
+
 } else {
     logger.warn("WARNING: config.properties not found — attraction basin tasks not generated.")
 }

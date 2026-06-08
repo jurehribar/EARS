@@ -73,10 +73,46 @@ public class Fill2D implements Serializable{
         	System.out.println("Smoothing finished.");
         }
     }
-	
+
+    /**
+     * In-memory constructor — accepts a pre-built HeatMap2D directly,
+     * skipping all disk I/O. Used by CombinedTest.
+     */
+    public Fill2D(String alg, HeatMap2D heatMap, boolean smoothBoundaries, int minPlateauSize, double plateauEpsilon) throws IOException, ClassNotFoundException
+    {
+        this.map = null;
+        this.step = null;
+        this.problemName = null;
+        this.lowerBound = null;
+        this.upperBound = null;
+        this.minPlateauSize = minPlateauSize;
+        this.plateauEpsilon = plateauEpsilon;
+        buildFromHeatMap(heatMap);
+        if(this.lowerBound == null || this.upperBound == null)
+            throw new IllegalArgumentException("Lower or upper bounds are null!");
+        if(step == null)
+            throw new IllegalArgumentException("Steps is null!");
+        if(problemName == null)
+            throw new IllegalArgumentException("ProblemName is null!");
+        calculate(alg);
+        System.out.println("Plateau detection started.");
+        detectPlateaus();
+        System.out.println("Plateau detection finished.");
+        if(smoothBoundaries) {
+            System.out.println("Smoothing started.");
+            smooth();
+            System.out.println("Smoothing finished.");
+        }
+    }
+
 	private void readCompressedHeatMapObject(String inputPath) throws FileNotFoundException, ClassNotFoundException, IOException {
 		HeatMap2D read = new HeatMap2D();
 		HeatMap2D heatMap = read.readCompressedFileToObject(inputPath);
+		buildFromHeatMap(heatMap);
+	}
+
+	/** Populate map[][] and metadata fields from an already-constructed HeatMap2D. */
+	private void buildFromHeatMap(HeatMap2D heatMap) {
 		map = new Point[heatMap.evals.length][heatMap.evals[0].length];
 		this.step = heatMap.step;
 		this.lowerBound = heatMap.lowerBound;
