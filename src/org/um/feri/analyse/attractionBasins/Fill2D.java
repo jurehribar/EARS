@@ -444,11 +444,10 @@ public class Fill2D implements Serializable{
 						}
 					}
 
-				// Assign final plateau ID, or -2 as "visited but not a plateau" sentinel.
-				// IMPORTANT: do NOT reset to 0 — that would cause the outer loop to
-				// re-flood-fill the same region repeatedly, making the algorithm O(N^2).
-				// -2 is skipped by the outer loop (plateau != 0) and by neighbours (plateau != 0).
-				// Callers that read plateau values should treat negative values as "no plateau".
+				// Assign final plateau ID, or -2 as "visited but not a plateau".
+				// do NOT reset to 0
+				// -2 is skipped by the outer loop
+				// negative values are "no plateau".
 				int plateauId = (coreSize > minPlateauSize) ? plateauCounter++ : -2;
 				for (int k = 0; k < regionSize; k++) {
 					int cell = regionArr[k];
