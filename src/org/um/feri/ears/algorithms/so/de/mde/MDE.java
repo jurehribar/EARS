@@ -73,12 +73,17 @@ public class MDE extends NumberAlgorithm {
     // Constructors
     // -----------------------------------------------------------------------
     /**
-     * Default: pop=50, F=0.5, CR=0.9, elite=1, local search every generation,
+     * Default: pop=30, F=0.5, CR=0.9, elite=1, local search every generation,
      * GradientDescentLocalSearch(0.01, 10).
      */
     public MDE() {
-        this(50, 0.5, 0.9, 1, 1, new GradientDescentLocalSearch());
+        this(30, 0.5, 0.9, 1, 1, new GradientDescentLocalSearch());
     }
+
+    public MDE(int eliteSize, int localSearchFrequency) {
+        this(30, 0.5, 0.9, eliteSize, localSearchFrequency, new GradientDescentLocalSearch());
+    }
+
     /**
      * Uses GradientDescentLocalSearch as the default local search.
      */
