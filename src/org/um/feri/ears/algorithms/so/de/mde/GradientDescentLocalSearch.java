@@ -5,31 +5,57 @@ import org.um.feri.ears.problems.StopCriterionException;
 import org.um.feri.ears.problems.Task;
 import java.util.ArrayList;
 /**
- * Gradient Descent local search using numerical central-difference approximation.
+ * Gradient Descent local search using numerical central-difference approximation
+ * with backtracking line search (Armijo condition).
  *
  * For each call to improve(), the algorithm performs up to maxSteps
  * gradient-descent steps starting from the provided solution.
- * The step size is controlled by learningRate.
- * The best solution encountered during the descent is returned.
+ * Instead of a fixed learning rate, each step uses backtracking line search:
+ *   - Start with initialStepSize as the candidate step length.
+ *   - Halve the step (up to maxBacktrackSteps times) until the Armijo
+ *     sufficient-decrease condition is satisfied:
+ *       f(x - alpha * grad) <= f(x) - c1 * alpha * ||grad||^2
+ *   - If no step satisfies the condition, skip the step (gradient is not useful here).
  *
  * Partial derivative for dimension i is estimated as:
  *   df/dx_i = ( f(x + eps*e_i) - f(x - eps*e_i) ) / (2*eps)
+ *
+ * The optimal eps for central differences in IEEE 754 double precision is:
+ *   eps_opt = (machine_epsilon)^(1/3) ≈ (2.2e-16)^(1/3) ≈ 6e-6
  */
 public class GradientDescentLocalSearch implements LocalSearch {
-    private static final double EPSILON = 1e-6;
-    private final double learningRate;
+    /** Optimal step for central-difference in double precision: cbrt(machine_epsilon). */
+    private static final double EPSILON = 6e-6;
+    /** Armijo sufficient-decrease constant (standard value). */
+    private static final double C1 = 1e-4;
+    private final double initialStepSize;
     private final int maxSteps;
-    /** Default: learningRate = 0.01, maxSteps = 10. */
+    private final int maxBacktrackSteps;
+    /**
+     * Default: initialStepSize = 1.0, maxSteps = 10, maxBacktrackSteps = 20.
+     * Starting step of 1.0 lets the line search find the right scale automatically.
+     */
     public GradientDescentLocalSearch() {
-        this(0.01, 10);
+        this(1.0, 10, 20);
     }
     /**
-     * @param learningRate step-size multiplier (alpha in  x = x - alpha * grad_f(x))
+     * @param initialStepSize  starting step length for backtracking (halved each trial)
+     * @param maxSteps         maximum gradient steps per improve() call
+     * @param maxBacktrackSteps maximum number of step halvings per gradient step
+     */
+    public GradientDescentLocalSearch(double initialStepSize, int maxSteps, int maxBacktrackSteps) {
+        this.initialStepSize   = initialStepSize;
+        this.maxSteps          = maxSteps;
+        this.maxBacktrackSteps = maxBacktrackSteps;
+    }
+    /**
+     * Backwards-compatible constructor: maps the old fixed learningRate to initialStepSize.
+     *
+     * @param learningRate used as initialStepSize
      * @param maxSteps     maximum gradient steps per improve() call
      */
     public GradientDescentLocalSearch(double learningRate, int maxSteps) {
-        this.learningRate = learningRate;
-        this.maxSteps = maxSteps;
+        this(learningRate, maxSteps, 20);
     }
     @Override
     public NumberSolution<Double> improve(NumberSolution<Double> solution,
@@ -41,16 +67,36 @@ public class GradientDescentLocalSearch implements LocalSearch {
             ArrayList<Double> vars = new ArrayList<>(current.getVariables());
             ArrayList<Double> gradient = computeGradient(vars, task);
             if (gradient == null) break;
-            // x = x - learningRate * grad_f(x)
-            ArrayList<Double> newVars = new ArrayList<>(vars.size());
-            for (int i = 0; i < vars.size(); i++) {
-                newVars.add(vars.get(i) - learningRate * gradient.get(i));
+            // Squared gradient norm: ||grad||^2  (used in Armijo condition)
+            double gradNormSq = 0.0;
+            for (double g : gradient) gradNormSq += g * g;
+            if (gradNormSq == 0.0) break; // already at a flat point, no descent direction
+            double currentVal = current.getObjective(0);
+            // Backtracking line search (Armijo condition)
+            // Find the largest alpha in {initialStepSize, .../2, .../4, ...} such that:
+            //   f(x - alpha * grad) <= f(x) - C1 * alpha * ||grad||^2
+            double alpha = initialStepSize;
+            NumberSolution<Double> candidate = null;
+            boolean stepAccepted = false;
+            for (int bt = 0; bt < maxBacktrackSteps; bt++) {
+                if (task.isStopCriterion()) break;
+                ArrayList<Double> newVars = new ArrayList<>(vars.size());
+                for (int i = 0; i < vars.size(); i++) {
+                    newVars.add(vars.get(i) - alpha * gradient.get(i));
+                }
+                candidate = new NumberSolution<>(newVars);
+                task.problem.makeFeasible(candidate);
+                if (task.isStopCriterion()) break;
+                task.eval(candidate);
+                // Armijo sufficient-decrease condition
+                if (candidate.getObjective(0) <= currentVal - C1 * alpha * gradNormSq) {
+                    stepAccepted = true;
+                    break;
+                }
+                alpha /= 2.0; // halve the step and retry
             }
-            NumberSolution<Double> candidate = new NumberSolution<>(newVars);
-            task.problem.makeFeasible(candidate);
-            if (task.isStopCriterion()) break;
-            task.eval(candidate);
-            if (task.problem.isFirstBetter(candidate, current)) {
+            if (stepAccepted && candidate != null
+                    && task.problem.isFirstBetter(candidate, current)) {
                 current = candidate;
             }
         }
@@ -58,8 +104,9 @@ public class GradientDescentLocalSearch implements LocalSearch {
     }
     /**
      * Estimate the gradient at vars using central differences.
+     * Uses eps = 6e-6, the theoretically optimal step for double precision.
      *
-     * @return the gradient vector, or null if stop criterion was reached
+     * @return the gradient vector, or null if the stop criterion was reached
      */
     private ArrayList<Double> computeGradient(ArrayList<Double> vars,
                                               Task<NumberSolution<Double>, DoubleProblem> task)
@@ -82,11 +129,13 @@ public class GradientDescentLocalSearch implements LocalSearch {
         }
         return gradient;
     }
-    public double getLearningRate() { return learningRate; }
-    public int getMaxSteps()        { return maxSteps;     }
+    public double getInitialStepSize()   { return initialStepSize;   }
+    public int getMaxSteps()             { return maxSteps;           }
+    public int getMaxBacktrackSteps()    { return maxBacktrackSteps;  }
     @Override
     public String toString() {
-        return "GradientDescentLocalSearch{learningRate=" + learningRate
-                + ", maxSteps=" + maxSteps + "}";
+        return "GradientDescentLocalSearch{initialStepSize=" + initialStepSize
+                + ", maxSteps=" + maxSteps
+                + ", maxBacktrackSteps=" + maxBacktrackSteps + "}";
     }
 }
