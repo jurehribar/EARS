@@ -1,0 +1,11 @@
+package org.um.feri.ears.experiment.ee;
+
+public enum ExplorationType {
+    SUCCESSFUL_EXPLORATION,
+    SUCCESSFUL_REJECTION,
+    DECEPTIVE_EXPLORATION,
+    FAILED_EXPLORATION,
+    SUCCESSFUL_EXPLOITATION,
+    UNSUCCESSFUL_EXPLOITATION,
+    INITIAL
+}
