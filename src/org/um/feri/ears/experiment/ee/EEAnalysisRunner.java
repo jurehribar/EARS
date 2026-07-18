@@ -22,55 +22,64 @@ public final class EEAnalysisRunner {
 
     public static void main(String[] args) throws IOException {
         Locale.setDefault(Locale.US);
-        Path historyDir = args.length > 0 ? Path.of(args[0]) : Path.of("History");
-        Path outputDir = args.length > 1 ? Path.of(args[1]) : Path.of("EEAnalysis");
+        Path historyDir;
+        Path outputDir;
+        EEAlgorithm selectedAlgorithm = null;
+        int offset = 0;
+        if (args.length > 0) {
+            try {
+                selectedAlgorithm = EEAlgorithm.fromLabel(args[0]);
+                offset = 1;
+            } catch (IllegalArgumentException ignored) {
+                selectedAlgorithm = null;
+            }
+        }
+
+        historyDir = args.length > offset ? Path.of(args[offset]) : Path.of("History");
+        outputDir = args.length > offset + 1 ? Path.of(args[offset + 1]) : Path.of("EEAnalysis");
         Files.createDirectories(outputDir);
 
-        if (args.length >= 7) {
-            EEProblemSpec spec = findProblem(args[2]);
-            int dimension = Integer.parseInt(args[3]);
-            int populationSize = Integer.parseInt(args[4]);
-            int maxEvaluations = Integer.parseInt(args[5]);
-            LimitSetting limitSetting = findLimit(args[6]);
-            MetricAccumulator accumulator = analyzeCombination(historyDir, outputDir, spec, dimension, populationSize, maxEvaluations, limitSetting);
-            try (BufferedWriter summary = Files.newBufferedWriter(outputDir.resolve("abc-summary.csv"));
-                 BufferedWriter ratios = Files.newBufferedWriter(outputDir.resolve("abc-ratios.csv"));
-                 BufferedWriter table = Files.newBufferedWriter(outputDir.resolve("abc-table.tex"))) {
-                summary.write("problem,dimension,population,evaluations,limit,runs,exploration_mean,exploration_stdev,exploitation_mean,exploitation_stdev,best_fitness_mean,best_fitness_stdev");
-                summary.newLine();
-                ratios.write("problem,dimension,population,evaluations,limit,runs,se_mean,se_stdev,fe_mean,fe_stdev,de_mean,de_stdev,sr_mean,sr_stdev,sx_mean,sx_stdev,ux_mean,ux_stdev");
-                ratios.newLine();
+        if (args.length >= offset + 7) {
+            EEAlgorithm algorithm = selectedAlgorithm != null ? selectedAlgorithm : EEAlgorithm.ABC;
+            EEProblemSpec spec = findProblem(args[offset + 2]);
+            int dimension = Integer.parseInt(args[offset + 3]);
+            int populationSize = Integer.parseInt(args[offset + 4]);
+            int maxEvaluations = Integer.parseInt(args[offset + 5]);
+            LimitSetting limitSetting = algorithm.usesLimit() ? findLimit(args[offset + 6]) : LimitSetting.K;
+            MetricAccumulator accumulator = analyzeCombination(algorithm, historyDir, outputDir, spec, dimension, populationSize, maxEvaluations, limitSetting);
+            try (BufferedWriter summary = Files.newBufferedWriter(outputDir.resolve("ee-summary.csv"));
+                 BufferedWriter ratios = Files.newBufferedWriter(outputDir.resolve("ee-ratios.csv"));
+                 BufferedWriter table = Files.newBufferedWriter(outputDir.resolve("ee-table.tex"))) {
+                writeSummaryHeader(summary);
+                writeRatiosHeader(ratios);
                 writeTableHeader(table);
                 if (accumulator.size() > 0) {
-                    writeSummary(summary, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
-                    writeRatios(ratios, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
-                    writeTableRow(table, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
+                    writeSummary(summary, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
+                    writeRatios(ratios, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
+                    writeTableRow(table, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
                 }
                 writeTableFooter(table);
             }
             return;
         }
 
-        try (BufferedWriter summary = Files.newBufferedWriter(outputDir.resolve("abc-summary.csv"));
-             BufferedWriter ratios = Files.newBufferedWriter(outputDir.resolve("abc-ratios.csv"));
-             BufferedWriter table = Files.newBufferedWriter(outputDir.resolve("abc-table.tex"))) {
-            summary.write("problem,dimension,population,evaluations,limit,runs,exploration_mean,exploration_stdev,exploitation_mean,exploitation_stdev,best_fitness_mean,best_fitness_stdev");
-            summary.newLine();
-            ratios.write("problem,dimension,population,evaluations,limit,runs,se_mean,se_stdev,fe_mean,fe_stdev,de_mean,de_stdev,sr_mean,sr_stdev,sx_mean,sx_stdev,ux_mean,ux_stdev");
-            ratios.newLine();
+        try (BufferedWriter summary = Files.newBufferedWriter(outputDir.resolve("ee-summary.csv"));
+             BufferedWriter ratios = Files.newBufferedWriter(outputDir.resolve("ee-ratios.csv"));
+             BufferedWriter table = Files.newBufferedWriter(outputDir.resolve("ee-table.tex"))) {
+            writeSummaryHeader(summary);
+            writeRatiosHeader(ratios);
             writeTableHeader(table);
 
-            for (int dimension : DIMENSIONS) {
-                for (int populationSize : POPULATION_SIZES) {
-                    for (int maxEvaluations : EVALUATIONS) {
-                        for (LimitSetting limitSetting : LimitSetting.values()) {
-                            for (EEProblemSpec spec : EEProblemFactory.all()) {
-                                MetricAccumulator accumulator = analyzeCombination(historyDir, outputDir, spec, dimension, populationSize, maxEvaluations, limitSetting);
-                                if (accumulator.size() > 0) {
-                                    writeSummary(summary, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
-                                    writeRatios(ratios, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
-                                    writeTableRow(table, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
+            for (EEAlgorithm algorithm : selectedAlgorithm == null ? EEAlgorithm.values() : new EEAlgorithm[]{selectedAlgorithm}) {
+                for (int dimension : DIMENSIONS) {
+                    for (int populationSize : POPULATION_SIZES) {
+                        for (int maxEvaluations : EVALUATIONS) {
+                            if (algorithm.usesLimit()) {
+                                for (LimitSetting limitSetting : LimitSetting.values()) {
+                                    analyzeAllProblems(historyDir, outputDir, summary, ratios, table, algorithm, dimension, populationSize, maxEvaluations, limitSetting);
                                 }
+                            } else {
+                                analyzeAllProblems(historyDir, outputDir, summary, ratios, table, algorithm, dimension, populationSize, maxEvaluations, LimitSetting.K);
                             }
                         }
                     }
@@ -98,11 +107,24 @@ public final class EEAnalysisRunner {
         throw new IllegalArgumentException("Unknown limit setting: " + label);
     }
 
-    private static MetricAccumulator analyzeCombination(Path historyDir, Path outputDir, EEProblemSpec spec, int dimension,
+    private static void analyzeAllProblems(Path historyDir, Path outputDir, BufferedWriter summary, BufferedWriter ratios, BufferedWriter table,
+                                           EEAlgorithm algorithm, int dimension, int populationSize, int maxEvaluations,
+                                           LimitSetting limitSetting) throws IOException {
+        for (EEProblemSpec spec : EEProblemFactory.all()) {
+            MetricAccumulator accumulator = analyzeCombination(algorithm, historyDir, outputDir, spec, dimension, populationSize, maxEvaluations, limitSetting);
+            if (accumulator.size() > 0) {
+                writeSummary(summary, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
+                writeRatios(ratios, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
+                writeTableRow(table, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
+            }
+        }
+    }
+
+    private static MetricAccumulator analyzeCombination(EEAlgorithm algorithm, Path historyDir, Path outputDir, EEProblemSpec spec, int dimension,
                                                         int populationSize, int maxEvaluations, LimitSetting limitSetting) throws IOException {
         MetricAccumulator accumulator = new MetricAccumulator();
         for (int run = 0; run < REPETITIONS; run++) {
-            Path file = historyDir.resolve(EEExperimentRunner.fileStem(spec, dimension, populationSize, maxEvaluations, limitSetting, run) + ".csv");
+            Path file = historyDir.resolve(EEExperimentRunner.fileStem(algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, run) + ".csv");
             if (!Files.exists(file)) {
                 continue;
             }
@@ -115,7 +137,7 @@ public final class EEAnalysisRunner {
         }
         if (accumulator.size() != REPETITIONS) {
             throw new IOException("Expected " + REPETITIONS + " history files for "
-                    + EEExperimentRunner.fileStem(spec, dimension, populationSize, maxEvaluations, limitSetting, 0)
+                    + EEExperimentRunner.fileStem(algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, 0)
                     + " through run " + (REPETITIONS - 1) + ", but found " + accumulator.size());
         }
         return accumulator;
@@ -179,20 +201,20 @@ public final class EEAnalysisRunner {
         }
     }
 
-    private static void writeSummary(BufferedWriter writer, EEProblemSpec spec, int dimension, int populationSize,
+    private static void writeSummary(BufferedWriter writer, EEAlgorithm algorithm, EEProblemSpec spec, int dimension, int populationSize,
                                      int maxEvaluations, LimitSetting limitSetting, MetricAccumulator accumulator) throws IOException {
-        writer.write(String.format(Locale.US, "%s,%d,%d,%d,%s,%d,%.8f,%.8f,%.8f,%.8f,%.12f,%.12f",
-                spec.getName(), dimension, populationSize, maxEvaluations, limitSetting.getLabel(), accumulator.size(),
+        writer.write(String.format(Locale.US, "%s,%s,%d,%d,%d,%s,%d,%.8f,%.8f,%.8f,%.8f,%.12f,%.12f",
+                algorithm.getLabel(), spec.getName(), dimension, populationSize, maxEvaluations, limitLabel(algorithm, limitSetting), accumulator.size(),
                 accumulator.mean(EEMetrics::getExplorationRatio), accumulator.stdev(EEMetrics::getExplorationRatio),
                 accumulator.mean(EEMetrics::getExploitationRatio), accumulator.stdev(EEMetrics::getExploitationRatio),
                 accumulator.mean(EEMetrics::getBestFitness), accumulator.stdev(EEMetrics::getBestFitness)));
         writer.newLine();
     }
 
-    private static void writeRatios(BufferedWriter writer, EEProblemSpec spec, int dimension, int populationSize,
+    private static void writeRatios(BufferedWriter writer, EEAlgorithm algorithm, EEProblemSpec spec, int dimension, int populationSize,
                                     int maxEvaluations, LimitSetting limitSetting, MetricAccumulator accumulator) throws IOException {
-        writer.write(String.format(Locale.US, "%s,%d,%d,%d,%s,%d,%s,%s,%s,%s,%s,%s",
-                spec.getName(), dimension, populationSize, maxEvaluations, limitSetting.getLabel(), accumulator.size(),
+        writer.write(String.format(Locale.US, "%s,%s,%d,%d,%d,%s,%d,%s,%s,%s,%s,%s,%s",
+                algorithm.getLabel(), spec.getName(), dimension, populationSize, maxEvaluations, limitLabel(algorithm, limitSetting), accumulator.size(),
                 pair(accumulator, EEMetrics::getSuccessfulExplorationRatio),
                 pair(accumulator, EEMetrics::getFailedExplorationRatio),
                 pair(accumulator, EEMetrics::getDeceptiveExplorationRatio),
@@ -206,20 +228,30 @@ public final class EEAnalysisRunner {
         return String.format(Locale.US, "%.8f,%.8f", accumulator.mean(extractor), accumulator.stdev(extractor));
     }
 
+    private static void writeSummaryHeader(BufferedWriter writer) throws IOException {
+        writer.write("algorithm,problem,dimension,population,evaluations,limit,runs,exploration_mean,exploration_stdev,exploitation_mean,exploitation_stdev,best_fitness_mean,best_fitness_stdev");
+        writer.newLine();
+    }
+
+    private static void writeRatiosHeader(BufferedWriter writer) throws IOException {
+        writer.write("algorithm,problem,dimension,population,evaluations,limit,runs,se_mean,se_stdev,fe_mean,fe_stdev,de_mean,de_stdev,sr_mean,sr_stdev,sx_mean,sx_stdev,ux_mean,ux_stdev");
+        writer.newLine();
+    }
+
     private static void writeTableHeader(BufferedWriter writer) throws IOException {
-        writer.write("\\begin{longtable}{lrrrrrrrrrrrrr}\n");
-        writer.write("Problem & D & Pop. & FEs & Limit & SE & FE & DE & SR & SX & UX & XPL & XPT & Best \\\\ \\hline\n");
+        writer.write("\\begin{longtable}{llrrrrrrrrrrrrr}\n");
+        writer.write("Algorithm & Problem & D & Pop. & FEs & Limit & SE & FE & DE & SR & SX & UX & XPL & XPT & Best \\\\ \\hline\n");
         writer.write("\\endfirsthead\n");
-        writer.write("Problem & D & Pop. & FEs & Limit & SE & FE & DE & SR & SX & UX & XPL & XPT & Best \\\\ \\hline\n");
+        writer.write("Algorithm & Problem & D & Pop. & FEs & Limit & SE & FE & DE & SR & SX & UX & XPL & XPT & Best \\\\ \\hline\n");
         writer.write("\\endhead\n");
     }
 
-    private static void writeTableRow(BufferedWriter writer, EEProblemSpec spec, int dimension, int populationSize,
+    private static void writeTableRow(BufferedWriter writer, EEAlgorithm algorithm, EEProblemSpec spec, int dimension, int populationSize,
                                       int maxEvaluations, LimitSetting limitSetting,
                                       MetricAccumulator accumulator) throws IOException {
         writer.write(String.format(Locale.US,
-                "%s & %d & %d & %d & %s & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.6g $\\pm$ %.6g \\\\%n",
-                spec.getName(), dimension, populationSize, maxEvaluations, limitSetting.getLabel(),
+                "%s & %s & %d & %d & %d & %s & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.6g $\\pm$ %.6g \\\\%n",
+                algorithm.getLabel(), spec.getName(), dimension, populationSize, maxEvaluations, limitLabel(algorithm, limitSetting),
                 accumulator.mean(EEMetrics::getSuccessfulExplorationRatio), accumulator.stdev(EEMetrics::getSuccessfulExplorationRatio),
                 accumulator.mean(EEMetrics::getFailedExplorationRatio), accumulator.stdev(EEMetrics::getFailedExplorationRatio),
                 accumulator.mean(EEMetrics::getDeceptiveExplorationRatio), accumulator.stdev(EEMetrics::getDeceptiveExplorationRatio),
@@ -229,6 +261,10 @@ public final class EEAnalysisRunner {
                 accumulator.mean(EEMetrics::getExplorationRatio), accumulator.stdev(EEMetrics::getExplorationRatio),
                 accumulator.mean(EEMetrics::getExploitationRatio), accumulator.stdev(EEMetrics::getExploitationRatio),
                 accumulator.mean(EEMetrics::getBestFitness), accumulator.stdev(EEMetrics::getBestFitness)));
+    }
+
+    private static String limitLabel(EEAlgorithm algorithm, LimitSetting limitSetting) {
+        return algorithm.usesLimit() ? limitSetting.getLabel() : "";
     }
 
     private static void writeTableFooter(BufferedWriter writer) throws IOException {

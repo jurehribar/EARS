@@ -3,6 +3,7 @@ import org.um.feri.ears.algorithms.AlgorithmInfo;
 import org.um.feri.ears.algorithms.Author;
 import org.um.feri.ears.algorithms.NumberAlgorithm;
 import org.um.feri.ears.algorithms.Algorithm;
+import org.um.feri.ears.algorithms.so.de.DE;
 import org.um.feri.ears.problems.DoubleProblem;
 import org.um.feri.ears.problems.NumberSolution;
 import org.um.feri.ears.problems.StopCriterionException;
@@ -13,12 +14,11 @@ import org.um.feri.ears.util.random.RNG;
 import java.util.ArrayList;
 import java.util.List;
 /**
- * Memetic Differential Evolution (MDE) - DE/rand/1/bin + pluggable local search.
+ * Memetic Differential Evolution (MDE) with pluggable local search.
  *
- * The DE component is a faithful port of the DE/rand/1/bin strategy from DE.java,
- * using the same generational (double-buffer pold/pnew) update and the same
- * binomial crossover traversal.  Passing null as localSearch makes the algorithm
- * behave identically to DE.java with Strategy.DE_RAND_1_BIN.
+ * The DE component supports the DE/rand/1/bin and DE/best/1/bin
+ * strategies from DE.java, using the same generational (double-buffer pold/pnew)
+ * update and binomial crossover traversal.
  *
  * Algorithm outline:
  *
@@ -49,6 +49,8 @@ public class MDE extends NumberAlgorithm {
     /** Crossover probability CR in [0, 1]. */
     @AlgorithmParameter(name = "CR")
     private final double CR;
+    @AlgorithmParameter(name = "DE strategy")
+    private final DE.Strategy strategy;
     /**
      * How many of the best individuals receive local-search refinement per
      * local-search phase.  Set to 0 to disable local search entirely.
@@ -80,6 +82,10 @@ public class MDE extends NumberAlgorithm {
         this(30, 0.5, 0.9, 1, 1, new GradientDescentLocalSearch());
     }
 
+    public MDE(DE.Strategy strategy) {
+        this(strategy, 30, 0.5, 0.9, 1, 1, new GradientDescentLocalSearch());
+    }
+
     public MDE(int eliteSize, int localSearchFrequency) {
         this(30, 0.5, 0.9, eliteSize, localSearchFrequency, new GradientDescentLocalSearch());
     }
@@ -103,12 +109,22 @@ public class MDE extends NumberAlgorithm {
     public MDE(int popSize, double F, double CR,
                int eliteSize, int localSearchFrequency,
                LocalSearch localSearch) {
+        this(DE.Strategy.DE_RAND_1_BIN, popSize, F, CR, eliteSize, localSearchFrequency, localSearch);
+    }
+
+    public MDE(DE.Strategy strategy, int popSize, double F, double CR,
+               int eliteSize, int localSearchFrequency,
+               LocalSearch localSearch) {
         if (popSize < 4)
             throw new IllegalArgumentException("Population size must be at least 4.");
         if (F <= 0 || F > 2)
             throw new IllegalArgumentException("Mutation factor F must be in (0, 2].");
         if (CR < 0 || CR > 1)
             throw new IllegalArgumentException("Crossover rate CR must be in [0, 1].");
+        if (strategy != DE.Strategy.DE_RAND_1_BIN
+                && strategy != DE.Strategy.DE_BEST_1_BIN)
+            throw new IllegalArgumentException("MDE supports only DE/rand/1/bin and DE/best/1/bin.");
+        this.strategy             = strategy;
         this.popSize              = popSize;
         this.F                    = F;
         this.CR                   = CR;
@@ -118,8 +134,8 @@ public class MDE extends NumberAlgorithm {
         au = new Author("mde", "mde@ears");
         ai = new AlgorithmInfo(
                 "MDE",
-                "Memetic Differential Evolution (DE/rand/1/bin + local search)",
-                "DE/rand/1/bin from: R. Storn & K. Price, Differential Evolution - "
+                "Memetic Differential Evolution (" + strategy.label + " + local search)",
+                strategy.label + " from: R. Storn & K. Price, Differential Evolution - "
                 + "A Simple and Efficient Heuristic for Global Optimization over "
                 + "Continuous Spaces, Journal of Global Optimization, 11(4):341-359, 1997."
         );
@@ -152,8 +168,9 @@ public class MDE extends NumberAlgorithm {
         initPopulation();
         int generation = 0;
         while (!task.isStopCriterion()) {
+            NumberSolution<Double> bestIt = bestSolution;
             // =================================================================
-            // DE phase: DE/rand/1/bin  (generational, identical to DE.java)
+            // DE phase (generational, matching the selected strategy in DE.java)
             // =================================================================
             for (int i = 0; i < popSize; i++) {
                 if (task.isStopCriterion()) break;
@@ -162,7 +179,7 @@ public class MDE extends NumberAlgorithm {
                 do { r1 = RNG.nextInt(popSize); } while (r1 == i);
                 do { r2 = RNG.nextInt(popSize); } while (r2 == i || r2 == r1);
                 do { r3 = RNG.nextInt(popSize); } while (r3 == i || r3 == r1 || r3 == r2);
-                // Build trial vector using DE/rand/1/bin crossover
+                // Build trial vector using binomial crossover
                 // Start at random dimension n, wrap around D times.
                 // The last dimension (L == D-1) is always taken from the mutant
                 // to guarantee at least one dimension changes -- identical to DE.java.
@@ -170,9 +187,13 @@ public class MDE extends NumberAlgorithm {
                 int n = RNG.nextInt(D);
                 for (int L = 0; L < D; L++) {
                     if (RNG.nextDouble() < CR || L == (D - 1)) {
-                        // mutation: v_n = pold[r1][n] + F*(pold[r2][n] - pold[r3][n])
-                        tmp[n] = pold[r1].getValue(n)
-                               + F * (pold[r2].getValue(n) - pold[r3].getValue(n));
+                        if (strategy == DE.Strategy.DE_BEST_1_BIN) {
+                            tmp[n] = bestIt.getValue(n)
+                                    + F * (pold[r2].getValue(n) - pold[r3].getValue(n));
+                        } else {
+                            tmp[n] = pold[r1].getValue(n)
+                                    + F * (pold[r2].getValue(n) - pold[r3].getValue(n));
+                        }
                     }
                     // else: tmp[n] keeps pold[i][n] (already copied above)
                     n = (n + 1) % D;
@@ -272,6 +293,7 @@ public class MDE extends NumberAlgorithm {
     public int getEliteSize()            { return eliteSize; }
     public int getLocalSearchFrequency() { return localSearchFrequency; }
     public LocalSearch getLocalSearch()  { return localSearch; }
+    public DE.Strategy getStrategy()     { return strategy; }
     @Override
     public List<Algorithm> getAlgorithmParameterTest(int dimension, int maxCombinations) {
         List<Algorithm> alternatives = new ArrayList<>();
@@ -290,7 +312,7 @@ public class MDE extends NumberAlgorithm {
                 {25, 1, 1}
             };
             for (int i = 0; i < combos.length && i < maxCombinations; i++) {
-                alternatives.add(new MDE(combos[i][0], F, CR, combos[i][1], combos[i][2],
+                alternatives.add(new MDE(strategy, combos[i][0], F, CR, combos[i][1], combos[i][2],
                         new GradientDescentLocalSearch()));
             }
         }
