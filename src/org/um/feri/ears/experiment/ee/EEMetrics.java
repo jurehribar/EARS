@@ -8,7 +8,9 @@ public final class EEMetrics {
     private int failedExploration;
     private int successfulExploitation;
     private int unsuccessfulExploitation;
-    private int localSearchEvaluations;
+    private int totalNodes;
+    private int rootNodes;
+    private long localSearchEvaluations;
     private double bestFitness = Double.POSITIVE_INFINITY;
 
     public void add(ExplorationType type) {
@@ -36,7 +38,14 @@ public final class EEMetrics {
         }
     }
 
-    public void addLocalSearchEvaluations(int evaluations) { localSearchEvaluations += evaluations; }
+    public void observeNode(boolean root) {
+        totalNodes++;
+        if (root) {
+            rootNodes++;
+        }
+    }
+
+    public void addLocalSearchEvaluations(long evaluations) { localSearchEvaluations += evaluations; }
     public void observeFitness(double fitness) { bestFitness = Math.min(bestFitness, fitness); }
 
     public int getExploration() { return successfulExploration + successfulRejection + deceptiveExploration + failedExploration; }
@@ -44,8 +53,8 @@ public final class EEMetrics {
     public int getClassifiedEvents() { return getExploration() + getExploitation(); }
 
     public double ratio(int count, int denominator) { return denominator == 0 ? 0.0 : (double) count / denominator; }
-    public double getExplorationRatio() { return ratio(getExploration(), getClassifiedEvents()); }
-    public double getExploitationRatio() { return ratio(getExploitation(), getClassifiedEvents()); }
+    public double getExplorationRatio() { return ratio(rootNodes + getExploration(), totalNodes); }
+    public double getExploitationRatio() { return 1.0 - getExplorationRatio(); }
     public double getSuccessfulExplorationRatio() { return ratio(successfulExploration, getExploration()); }
     public double getSuccessfulRejectionRatio() { return ratio(successfulRejection, getExploration()); }
     public double getDeceptiveExplorationRatio() { return ratio(deceptiveExploration, getExploration()); }
@@ -59,6 +68,6 @@ public final class EEMetrics {
     public int getFailedExploration() { return failedExploration; }
     public int getSuccessfulExploitation() { return successfulExploitation; }
     public int getUnsuccessfulExploitation() { return unsuccessfulExploitation; }
-    public int getLocalSearchEvaluations() { return localSearchEvaluations; }
+    public long getLocalSearchEvaluations() { return localSearchEvaluations; }
     public double getBestFitness() { return bestFitness; }
 }

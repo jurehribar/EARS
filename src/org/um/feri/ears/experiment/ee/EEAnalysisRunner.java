@@ -34,25 +34,31 @@ public final class EEAnalysisRunner {
             LimitSetting limitSetting = findLimit(args[6]);
             MetricAccumulator accumulator = analyzeCombination(historyDir, outputDir, spec, dimension, populationSize, maxEvaluations, limitSetting);
             try (BufferedWriter summary = Files.newBufferedWriter(outputDir.resolve("abc-summary.csv"));
-                 BufferedWriter ratios = Files.newBufferedWriter(outputDir.resolve("abc-ratios.csv"))) {
+                 BufferedWriter ratios = Files.newBufferedWriter(outputDir.resolve("abc-ratios.csv"));
+                 BufferedWriter table = Files.newBufferedWriter(outputDir.resolve("abc-table.tex"))) {
                 summary.write("problem,dimension,population,evaluations,limit,runs,exploration_mean,exploration_stdev,exploitation_mean,exploitation_stdev,best_fitness_mean,best_fitness_stdev");
                 summary.newLine();
                 ratios.write("problem,dimension,population,evaluations,limit,runs,se_mean,se_stdev,fe_mean,fe_stdev,de_mean,de_stdev,sr_mean,sr_stdev,sx_mean,sx_stdev,ux_mean,ux_stdev");
                 ratios.newLine();
+                writeTableHeader(table);
                 if (accumulator.size() > 0) {
                     writeSummary(summary, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
                     writeRatios(ratios, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
+                    writeTableRow(table, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
                 }
+                writeTableFooter(table);
             }
             return;
         }
 
         try (BufferedWriter summary = Files.newBufferedWriter(outputDir.resolve("abc-summary.csv"));
-             BufferedWriter ratios = Files.newBufferedWriter(outputDir.resolve("abc-ratios.csv"))) {
+             BufferedWriter ratios = Files.newBufferedWriter(outputDir.resolve("abc-ratios.csv"));
+             BufferedWriter table = Files.newBufferedWriter(outputDir.resolve("abc-table.tex"))) {
             summary.write("problem,dimension,population,evaluations,limit,runs,exploration_mean,exploration_stdev,exploitation_mean,exploitation_stdev,best_fitness_mean,best_fitness_stdev");
             summary.newLine();
             ratios.write("problem,dimension,population,evaluations,limit,runs,se_mean,se_stdev,fe_mean,fe_stdev,de_mean,de_stdev,sr_mean,sr_stdev,sx_mean,sx_stdev,ux_mean,ux_stdev");
             ratios.newLine();
+            writeTableHeader(table);
 
             for (int dimension : DIMENSIONS) {
                 for (int populationSize : POPULATION_SIZES) {
@@ -63,12 +69,14 @@ public final class EEAnalysisRunner {
                                 if (accumulator.size() > 0) {
                                     writeSummary(summary, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
                                     writeRatios(ratios, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
+                                    writeTableRow(table, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
                                 }
                             }
                         }
                     }
                 }
             }
+            writeTableFooter(table);
         }
     }
 
@@ -104,6 +112,11 @@ public final class EEAnalysisRunner {
             EEMetrics metrics = EERunAnalyzer.analyze(problem, spec.getLocalSearchStep(), nodes);
             accumulator.add(metrics);
             writeRunSeries(outputDir, file.getFileName().toString().replace(".csv", ""), nodes);
+        }
+        if (accumulator.size() != REPETITIONS) {
+            throw new IOException("Expected " + REPETITIONS + " history files for "
+                    + EEExperimentRunner.fileStem(spec, dimension, populationSize, maxEvaluations, limitSetting, 0)
+                    + " through run " + (REPETITIONS - 1) + ", but found " + accumulator.size());
         }
         return accumulator;
     }
@@ -191,5 +204,34 @@ public final class EEAnalysisRunner {
 
     private static String pair(MetricAccumulator accumulator, ToDoubleFunction<EEMetrics> extractor) {
         return String.format(Locale.US, "%.8f,%.8f", accumulator.mean(extractor), accumulator.stdev(extractor));
+    }
+
+    private static void writeTableHeader(BufferedWriter writer) throws IOException {
+        writer.write("\\begin{longtable}{lrrrrrrrrrrrrr}\n");
+        writer.write("Problem & D & Pop. & FEs & Limit & SE & FE & DE & SR & SX & UX & XPL & XPT & Best \\\\ \\hline\n");
+        writer.write("\\endfirsthead\n");
+        writer.write("Problem & D & Pop. & FEs & Limit & SE & FE & DE & SR & SX & UX & XPL & XPT & Best \\\\ \\hline\n");
+        writer.write("\\endhead\n");
+    }
+
+    private static void writeTableRow(BufferedWriter writer, EEProblemSpec spec, int dimension, int populationSize,
+                                      int maxEvaluations, LimitSetting limitSetting,
+                                      MetricAccumulator accumulator) throws IOException {
+        writer.write(String.format(Locale.US,
+                "%s & %d & %d & %d & %s & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.6g $\\pm$ %.6g \\\\%n",
+                spec.getName(), dimension, populationSize, maxEvaluations, limitSetting.getLabel(),
+                accumulator.mean(EEMetrics::getSuccessfulExplorationRatio), accumulator.stdev(EEMetrics::getSuccessfulExplorationRatio),
+                accumulator.mean(EEMetrics::getFailedExplorationRatio), accumulator.stdev(EEMetrics::getFailedExplorationRatio),
+                accumulator.mean(EEMetrics::getDeceptiveExplorationRatio), accumulator.stdev(EEMetrics::getDeceptiveExplorationRatio),
+                accumulator.mean(EEMetrics::getSuccessfulRejectionRatio), accumulator.stdev(EEMetrics::getSuccessfulRejectionRatio),
+                accumulator.mean(EEMetrics::getSuccessfulExploitationRatio), accumulator.stdev(EEMetrics::getSuccessfulExploitationRatio),
+                accumulator.mean(EEMetrics::getUnsuccessfulExploitationRatio), accumulator.stdev(EEMetrics::getUnsuccessfulExploitationRatio),
+                accumulator.mean(EEMetrics::getExplorationRatio), accumulator.stdev(EEMetrics::getExplorationRatio),
+                accumulator.mean(EEMetrics::getExploitationRatio), accumulator.stdev(EEMetrics::getExploitationRatio),
+                accumulator.mean(EEMetrics::getBestFitness), accumulator.stdev(EEMetrics::getBestFitness)));
+    }
+
+    private static void writeTableFooter(BufferedWriter writer) throws IOException {
+        writer.write("\\end{longtable}\n");
     }
 }

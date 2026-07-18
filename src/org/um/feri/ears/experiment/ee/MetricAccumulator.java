@@ -37,6 +37,6 @@ public final class MetricAccumulator {
             double diff = extractor.applyAsDouble(metrics) - mean;
             sum += diff * diff;
         }
-        return Math.sqrt(sum / all.size());
+        return Math.sqrt(sum / (all.size() - 1));
     }
 }

@@ -86,23 +86,18 @@ public class ABCLogging extends NumberAlgorithm {
     }
 
     private void sendScoutBees() throws StopCriterionException {
-        int maxTrialIndex = 0;
-        for (int i = 1; i < foodNumber; i++) {
-            if (population.get(i).trials > population.get(maxTrialIndex).trials) {
-                maxTrialIndex = i;
-            }
-        }
+        for (int i = 0; i < foodNumber; i++) {
+            if (population.get(i).trials >= limit) {
+                if (task.isStopCriterion()) {
+                    return;
+                }
 
-        if (population.get(maxTrialIndex).trials >= limit) {
-            if (task.isStopCriterion()) {
-                return;
+                ABCSolution parent = population.get(i);
+                ABCSolution newBee = new ABCSolution(task.problem.generateRandomSolution());
+                newBee.parents = singleParent(parent);
+                task.eval(newBee);
+                population.set(i, newBee);
             }
-
-            ABCSolution parent = population.get(maxTrialIndex);
-            ABCSolution newBee = new ABCSolution(task.problem.generateRandomSolution());
-            newBee.parents = singleParent(parent);
-            task.eval(newBee);
-            population.set(maxTrialIndex, newBee);
         }
     }
 
@@ -172,8 +167,10 @@ public class ABCLogging extends NumberAlgorithm {
 
         int paramToChange = RNG.nextInt(task.problem.getNumberOfDimensions());
         double phi = RNG.nextDouble(-1, 1);
+        // Keep the coefficient transformation used by the paper implementation.
         double newValue = population.get(index).getValue(paramToChange)
-                + (population.get(index).getValue(paramToChange) - population.get(neighbour).getValue(paramToChange)) * phi;
+                + (population.get(index).getValue(paramToChange) - population.get(neighbour).getValue(paramToChange))
+                * (phi - 0.5) * 2.0;
         newValue = task.problem.makeFeasible(newValue, paramToChange);
 
         ABCSolution newBee = new ABCSolution(new NumberSolution<>(population.get(index).getVariables()));
