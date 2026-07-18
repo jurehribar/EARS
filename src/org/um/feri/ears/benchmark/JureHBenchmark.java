@@ -23,12 +23,12 @@ public class JureHBenchmark extends SOBenchmark<NumberSolution<Double>, NumberSo
 
     @Override
     public void initAllProblems() {
-        //addTask(new Rastrigin(10), stopCriterion, 20000, 0, maxIterations);
-        //addTask(new Sphere(10), stopCriterion, 20000, 0, maxIterations);
-        //addTask(new Schwefel226(10), stopCriterion, 20000, 0, maxIterations);
+        addTask(new Rastrigin(10), stopCriterion, 200000, 0, maxIterations);
+        addTask(new Schwefel226(10), stopCriterion, 200000, 0, maxIterations);
+        addTask(new Griewank(10), stopCriterion, 200000, 0, maxIterations);
 
-        addTask(new RosenbrockDeJong2(10), stopCriterion, 20000, 0, maxIterations);
-        addTask(new Powell(10), stopCriterion, 20000, 0, maxIterations);
-        addTask(new Zakharov(10), stopCriterion, 20000, 0, maxIterations);
+        //addTask(new RosenbrockDeJong2(10), stopCriterion, 200000, 0, maxIterations);
+        //addTask(new Powell(10), stopCriterion, 200000, 0, maxIterations);
+        //addTask(new Zakharov(10), stopCriterion, 200000, 0, maxIterations);
     }
 }
