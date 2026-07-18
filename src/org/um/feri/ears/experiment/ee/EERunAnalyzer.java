@@ -15,7 +15,6 @@ public final class EERunAnalyzer {
         AttractorLocalSearch localSearch = new AttractorLocalSearch(localSearchStep);
 
         for (EELogNode node : nodes) {
-            metrics.observeNode(node.getParent() == null);
             Attractor attractor = localSearch.find(problem, node.getVariables());
             node.setAttractor(attractor);
             metrics.addLocalSearchEvaluations(attractor.getEvaluations());
@@ -23,6 +22,8 @@ public final class EERunAnalyzer {
         }
 
         for (EELogNode node : nodes) {
+            selectClosestParent(node);
+            metrics.observeNode(node.getParent() == null);
             if (node.getParent() == null) {
                 continue;
             }
@@ -33,6 +34,20 @@ public final class EERunAnalyzer {
         }
 
         return metrics;
+    }
+
+    private static void selectClosestParent(EELogNode node) {
+        EELogNode closest = null;
+        double closestDistance = Double.POSITIVE_INFINITY;
+        for (EELogNode candidate : node.getCandidateParents()) {
+            double candidateDistance = distance(node.getAttractor().getVariables(),
+                    candidate.getAttractor().getVariables());
+            if (candidateDistance < closestDistance) {
+                closest = candidate;
+                closestDistance = candidateDistance;
+            }
+        }
+        node.setParent(closest);
     }
 
     private static ExplorationType classify(EELogNode child, EELogNode parent, double basinTolerance) {

@@ -19,4 +19,11 @@ public interface LocalSearch {
     NumberSolution<Double> improve(NumberSolution<Double> solution,
                                    Task<NumberSolution<Double>, DoubleProblem> task)
             throws StopCriterionException;
+
+    default NumberSolution<Double> improve(NumberSolution<Double> solution,
+                                           Task<NumberSolution<Double>, DoubleProblem> task,
+                                           boolean logAncestry)
+            throws StopCriterionException {
+        return improve(solution, task);
+    }
 }

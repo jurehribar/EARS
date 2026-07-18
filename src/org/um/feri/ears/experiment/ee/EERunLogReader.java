@@ -35,8 +35,7 @@ public final class EERunLogReader {
             for (Long parentId : parentIds) {
                 EELogNode parent = byId.get(parentId);
                 if (parent != null) {
-                    node.setParent(parent);
-                    break;
+                    node.addCandidateParent(parent);
                 }
             }
 

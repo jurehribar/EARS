@@ -204,6 +204,7 @@ public class MDE extends NumberAlgorithm {
                 }
                 // Evaluate trial vector
                 NumberSolution<Double> trial = new NumberSolution<>(Util.toDoubleArrayList(tmp));
+                assignTrialParents(trial, bestIt, pold[r1], pold[r2], pold[r3]);
                 task.eval(trial);
                 // Greedy selection into pnew (generational - reads from pold, writes to pnew)
                 if (task.problem.isFirstBetter(trial, pold[i])) {
@@ -248,7 +249,14 @@ public class MDE extends NumberAlgorithm {
         int[] eliteIndices = getEliteIndices(actualElite);
         for (int idx : eliteIndices) {
             if (task.isStopCriterion()) break;
-            NumberSolution<Double> improved = localSearch.improve(pold[idx], task);
+            NumberSolution<Double> source = pold[idx];
+            int ancestryStart = captureLocalSearchAncestryStart();
+            NumberSolution<Double> improved;
+            try {
+                improved = localSearch.improve(source, task, logLocalSearchAncestry());
+            } finally {
+                assignFallbackLocalSearchParents(ancestryStart, source);
+            }
             if (task.problem.isFirstBetter(improved, pold[idx])) {
                 pold[idx] = improved;
                 if (task.problem.isFirstBetter(improved, bestSolution)) {
@@ -256,6 +264,24 @@ public class MDE extends NumberAlgorithm {
                 }
             }
         }
+    }
+
+    protected void assignTrialParents(NumberSolution<Double> trial,
+                                      NumberSolution<Double> bestIt,
+                                      NumberSolution<Double> r1,
+                                      NumberSolution<Double> r2,
+                                      NumberSolution<Double> r3) {
+    }
+
+    protected boolean logLocalSearchAncestry() {
+        return false;
+    }
+
+    protected int captureLocalSearchAncestryStart() {
+        return -1;
+    }
+
+    protected void assignFallbackLocalSearchParents(int ancestryStart, NumberSolution<Double> source) {
     }
     /**
      * Return the indices of the k best individuals in pold (no sort, O(k*N)).

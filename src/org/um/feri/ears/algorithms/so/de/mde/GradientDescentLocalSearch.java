@@ -4,6 +4,7 @@ import org.um.feri.ears.problems.NumberSolution;
 import org.um.feri.ears.problems.StopCriterionException;
 import org.um.feri.ears.problems.Task;
 import java.util.ArrayList;
+import java.util.Collections;
 /**
  * Gradient Descent local search using numerical central-difference approximation
  * with backtracking line search (Armijo condition).
@@ -61,11 +62,19 @@ public class GradientDescentLocalSearch implements LocalSearch {
     public NumberSolution<Double> improve(NumberSolution<Double> solution,
                                           Task<NumberSolution<Double>, DoubleProblem> task)
             throws StopCriterionException {
+        return improve(solution, task, false);
+    }
+
+    @Override
+    public NumberSolution<Double> improve(NumberSolution<Double> solution,
+                                          Task<NumberSolution<Double>, DoubleProblem> task,
+                                          boolean logAncestry)
+            throws StopCriterionException {
         NumberSolution<Double> current = solution;
         for (int step = 0; step < maxSteps; step++) {
             if (task.isStopCriterion()) break;
             ArrayList<Double> vars = new ArrayList<>(current.getVariables());
-            ArrayList<Double> gradient = computeGradient(vars, task);
+            ArrayList<Double> gradient = computeGradient(vars, current, task, logAncestry);
             if (gradient == null) break;
             // Squared gradient norm: ||grad||^2  (used in Armijo condition)
             double gradNormSq = 0.0;
@@ -86,6 +95,7 @@ public class GradientDescentLocalSearch implements LocalSearch {
                 }
                 candidate = new NumberSolution<>(newVars);
                 task.problem.makeFeasible(candidate);
+                setParent(candidate, current, logAncestry);
                 if (task.isStopCriterion()) break;
                 task.eval(candidate);
                 // Armijo sufficient-decrease condition
@@ -109,7 +119,9 @@ public class GradientDescentLocalSearch implements LocalSearch {
      * @return the gradient vector, or null if the stop criterion was reached
      */
     private ArrayList<Double> computeGradient(ArrayList<Double> vars,
-                                              Task<NumberSolution<Double>, DoubleProblem> task)
+                                              NumberSolution<Double> current,
+                                              Task<NumberSolution<Double>, DoubleProblem> task,
+                                              boolean logAncestry)
             throws StopCriterionException {
         ArrayList<Double> gradient = new ArrayList<>(vars.size());
         for (int i = 0; i < vars.size(); i++) {
@@ -117,17 +129,27 @@ public class GradientDescentLocalSearch implements LocalSearch {
             vars.set(i, original + EPSILON);
             if (task.isStopCriterion()) return null;
             NumberSolution<Double> fwdSol = new NumberSolution<>(new ArrayList<>(vars));
+            setParent(fwdSol, current, logAncestry);
             task.eval(fwdSol);
             double fwdVal = fwdSol.getObjective(0);
             vars.set(i, original - EPSILON);
             if (task.isStopCriterion()) return null;
             NumberSolution<Double> bwdSol = new NumberSolution<>(new ArrayList<>(vars));
+            setParent(bwdSol, current, logAncestry);
             task.eval(bwdSol);
             double bwdVal = bwdSol.getObjective(0);
             gradient.add((fwdVal - bwdVal) / (2.0 * EPSILON));
             vars.set(i, original);
         }
         return gradient;
+    }
+
+    private void setParent(NumberSolution<Double> solution,
+                           NumberSolution<Double> parent,
+                           boolean logAncestry) {
+        if (logAncestry) {
+            solution.parents = Collections.singletonList(parent);
+        }
     }
     public double getInitialStepSize()   { return initialStepSize;   }
     public int getMaxSteps()             { return maxSteps;           }
