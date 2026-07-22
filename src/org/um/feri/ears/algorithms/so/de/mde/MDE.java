@@ -32,7 +32,7 @@ import java.util.List;
  *       mutation:  v_i = pold[r1] + F * (pold[r2] - pold[r3])
  *       crossover: starting at random n, wrap around D dimensions,
  *                  copy from v_i if rand()<CR or last dimension, else from pold[i]
- *       selection: if f(trial) <= f(pold[i]): pnew[i] = trial, else pnew[i] = pold[i]
+ *       selection: if f(trial) < f(pold[i]): pnew[i] = trial, else pnew[i] = pold[i]
  *     swap pold <-> pnew
  *
  *     // Local search phase (every localSearchFrequency generations)
@@ -204,7 +204,7 @@ public class MDE extends NumberAlgorithm {
                 }
                 // Evaluate trial vector
                 NumberSolution<Double> trial = new NumberSolution<>(Util.toDoubleArrayList(tmp));
-                assignTrialParents(trial, bestIt, pold[r1], pold[r2], pold[r3]);
+                assignTrialParents(trial, pold[i]);
                 task.eval(trial);
                 // Greedy selection into pnew (generational - reads from pold, writes to pnew)
                 if (task.problem.isFirstBetter(trial, pold[i])) {
@@ -267,10 +267,7 @@ public class MDE extends NumberAlgorithm {
     }
 
     protected void assignTrialParents(NumberSolution<Double> trial,
-                                      NumberSolution<Double> bestIt,
-                                      NumberSolution<Double> r1,
-                                      NumberSolution<Double> r2,
-                                      NumberSolution<Double> r3) {
+                                      NumberSolution<Double> target) {
     }
 
     protected boolean logLocalSearchAncestry() {

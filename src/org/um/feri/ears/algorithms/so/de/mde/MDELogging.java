@@ -54,20 +54,13 @@ public class MDELogging extends MDE {
         au = new Author("mde", "mde@ears");
         ai = new AlgorithmInfo("MDE-" + getStrategy().label + "Logging",
                 "Memetic Differential Evolution (" + getStrategy().label + ") with ancestry logging",
-                "MDE with DE mutation-parent and local-search ancestry logging.");
+                "MDE with DE target-parent and local-search ancestry logging.");
     }
 
     @Override
     protected void assignTrialParents(NumberSolution<Double> trial,
-                                      NumberSolution<Double> bestIt,
-                                      NumberSolution<Double> r1,
-                                      NumberSolution<Double> r2,
-                                      NumberSolution<Double> r3) {
-        if (getStrategy() == DE.Strategy.DE_BEST_1_BIN) {
-            trial.parents = parents(bestIt, r2, r3);
-        } else {
-            trial.parents = parents(r1, r2, r3);
-        }
+                                      NumberSolution<Double> target) {
+        trial.parents = parents(target);
     }
 
     @Override
