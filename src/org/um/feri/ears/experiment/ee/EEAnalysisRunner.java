@@ -46,7 +46,15 @@ public final class EEAnalysisRunner {
             int populationSize = Integer.parseInt(args[offset + 4]);
             int maxEvaluations = Integer.parseInt(args[offset + 5]);
             LimitSetting limitSetting = algorithm.usesLimit() ? findLimit(args[offset + 6]) : LimitSetting.K;
-            MetricAccumulator accumulator = analyzeCombination(algorithm, historyDir, outputDir, spec, dimension, populationSize, maxEvaluations, limitSetting);
+            int eliteSize = optionalMdeParameter(args, offset + 7, EEAlgorithm.DEFAULT_MDE_ELITE_SIZE,
+                    "elite size", algorithm);
+            int localSearchFrequency = optionalMdeParameter(args, offset + 8,
+                    EEAlgorithm.DEFAULT_MDE_LOCAL_SEARCH_FREQUENCY, "local-search frequency", algorithm);
+            double f = optionalMdeDoubleParameter(args, offset + 9, EEAlgorithm.DEFAULT_MDE_F, "F", algorithm);
+            double cr = optionalMdeDoubleParameter(args, offset + 10, EEAlgorithm.DEFAULT_MDE_CR, "CR", algorithm);
+            validateMdeParameterPair(args, offset, algorithm);
+            MetricAccumulator accumulator = analyzeCombination(algorithm, historyDir, outputDir, spec, dimension,
+                    populationSize, maxEvaluations, limitSetting, eliteSize, localSearchFrequency, f, cr);
             try (BufferedWriter summary = Files.newBufferedWriter(outputDir.resolve("ee-summary.csv"));
                  BufferedWriter ratios = Files.newBufferedWriter(outputDir.resolve("ee-ratios.csv"));
                  BufferedWriter table = Files.newBufferedWriter(outputDir.resolve("ee-table.tex"))) {
@@ -54,9 +62,12 @@ public final class EEAnalysisRunner {
                 writeRatiosHeader(ratios);
                 writeTableHeader(table);
                 if (accumulator.size() > 0) {
-                    writeSummary(summary, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
-                    writeRatios(ratios, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
-                    writeTableRow(table, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
+                    writeSummary(summary, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting,
+                            eliteSize, localSearchFrequency, f, cr, accumulator);
+                    writeRatios(ratios, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting,
+                            eliteSize, localSearchFrequency, f, cr, accumulator);
+                    writeTableRow(table, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting,
+                            eliteSize, localSearchFrequency, f, cr, accumulator);
                 }
                 writeTableFooter(table);
             }
@@ -76,10 +87,18 @@ public final class EEAnalysisRunner {
                         for (int maxEvaluations : EVALUATIONS) {
                             if (algorithm.usesLimit()) {
                                 for (LimitSetting limitSetting : LimitSetting.values()) {
-                                    analyzeAllProblems(historyDir, outputDir, summary, ratios, table, algorithm, dimension, populationSize, maxEvaluations, limitSetting);
+                                    analyzeAllProblems(historyDir, outputDir, summary, ratios, table, algorithm, dimension,
+                                            populationSize, maxEvaluations, limitSetting,
+                                            EEAlgorithm.DEFAULT_MDE_ELITE_SIZE,
+                                            EEAlgorithm.DEFAULT_MDE_LOCAL_SEARCH_FREQUENCY,
+                                            EEAlgorithm.DEFAULT_MDE_F, EEAlgorithm.DEFAULT_MDE_CR);
                                 }
                             } else {
-                                analyzeAllProblems(historyDir, outputDir, summary, ratios, table, algorithm, dimension, populationSize, maxEvaluations, LimitSetting.K);
+                                analyzeAllProblems(historyDir, outputDir, summary, ratios, table, algorithm, dimension,
+                                        populationSize, maxEvaluations, LimitSetting.K,
+                                        EEAlgorithm.DEFAULT_MDE_ELITE_SIZE,
+                                        EEAlgorithm.DEFAULT_MDE_LOCAL_SEARCH_FREQUENCY,
+                                        EEAlgorithm.DEFAULT_MDE_F, EEAlgorithm.DEFAULT_MDE_CR);
                             }
                         }
                     }
@@ -107,24 +126,66 @@ public final class EEAnalysisRunner {
         throw new IllegalArgumentException("Unknown limit setting: " + label);
     }
 
+    private static int optionalMdeParameter(String[] args, int index, int defaultValue, String name,
+                                            EEAlgorithm algorithm) {
+        if (args.length <= index) {
+            return defaultValue;
+        }
+        if (!algorithm.isMde()) {
+            throw new IllegalArgumentException(name + " is supported only for MDE algorithms");
+        }
+        return Integer.parseInt(args[index]);
+    }
+
+    private static double optionalMdeDoubleParameter(String[] args, int index, double defaultValue, String name,
+                                                     EEAlgorithm algorithm) {
+        if (args.length <= index) {
+            return defaultValue;
+        }
+        if (!algorithm.isMde()) {
+            throw new IllegalArgumentException(name + " is supported only for MDE algorithms");
+        }
+        return Double.parseDouble(args[index]);
+    }
+
+    private static void validateMdeParameterPair(String[] args, int offset, EEAlgorithm algorithm) {
+        int baseArgumentCount = offset + 7;
+        if (algorithm.isMde()
+                && (args.length == baseArgumentCount + 1 || args.length == baseArgumentCount + 3)) {
+            throw new IllegalArgumentException(
+                    "Provide MDE parameters as complete pairs: elite size/frequency and F/CR");
+        }
+        if (args.length > baseArgumentCount + 4) {
+            throw new IllegalArgumentException("Too many analysis arguments");
+        }
+    }
+
     private static void analyzeAllProblems(Path historyDir, Path outputDir, BufferedWriter summary, BufferedWriter ratios, BufferedWriter table,
                                            EEAlgorithm algorithm, int dimension, int populationSize, int maxEvaluations,
-                                           LimitSetting limitSetting) throws IOException {
+                                           LimitSetting limitSetting, int eliteSize,
+                                           int localSearchFrequency, double f, double cr) throws IOException {
         for (EEProblemSpec spec : EEProblemFactory.all()) {
-            MetricAccumulator accumulator = analyzeCombination(algorithm, historyDir, outputDir, spec, dimension, populationSize, maxEvaluations, limitSetting);
+            MetricAccumulator accumulator = analyzeCombination(algorithm, historyDir, outputDir, spec, dimension,
+                    populationSize, maxEvaluations, limitSetting, eliteSize, localSearchFrequency, f, cr);
             if (accumulator.size() > 0) {
-                writeSummary(summary, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
-                writeRatios(ratios, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
-                writeTableRow(table, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, accumulator);
+                writeSummary(summary, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting,
+                        eliteSize, localSearchFrequency, f, cr, accumulator);
+                writeRatios(ratios, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting,
+                        eliteSize, localSearchFrequency, f, cr, accumulator);
+                writeTableRow(table, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting,
+                        eliteSize, localSearchFrequency, f, cr, accumulator);
             }
         }
     }
 
     private static MetricAccumulator analyzeCombination(EEAlgorithm algorithm, Path historyDir, Path outputDir, EEProblemSpec spec, int dimension,
-                                                        int populationSize, int maxEvaluations, LimitSetting limitSetting) throws IOException {
+                                                        int populationSize, int maxEvaluations, LimitSetting limitSetting,
+                                                        int eliteSize, int localSearchFrequency,
+                                                        double f, double cr) throws IOException {
         MetricAccumulator accumulator = new MetricAccumulator();
         for (int run = 0; run < REPETITIONS; run++) {
-            Path file = historyDir.resolve(EEExperimentRunner.fileStem(algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, run) + ".csv");
+            Path file = historyDir.resolve(EEExperimentRunner.fileStem(algorithm, spec, dimension, populationSize,
+                    maxEvaluations, limitSetting, run, eliteSize, localSearchFrequency, f, cr) + ".csv");
             if (!Files.exists(file)) {
                 continue;
             }
@@ -137,7 +198,8 @@ public final class EEAnalysisRunner {
         }
         if (accumulator.size() != REPETITIONS) {
             throw new IOException("Expected " + REPETITIONS + " history files for "
-                    + EEExperimentRunner.fileStem(algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, 0)
+                    + EEExperimentRunner.fileStem(algorithm, spec, dimension, populationSize, maxEvaluations,
+                    limitSetting, 0, eliteSize, localSearchFrequency, f, cr)
                     + " through run " + (REPETITIONS - 1) + ", but found " + accumulator.size());
         }
         return accumulator;
@@ -203,9 +265,12 @@ public final class EEAnalysisRunner {
     }
 
     private static void writeSummary(BufferedWriter writer, EEAlgorithm algorithm, EEProblemSpec spec, int dimension, int populationSize,
-                                     int maxEvaluations, LimitSetting limitSetting, MetricAccumulator accumulator) throws IOException {
+                                     int maxEvaluations, LimitSetting limitSetting, int eliteSize,
+                                     int localSearchFrequency, double f, double cr,
+                                     MetricAccumulator accumulator) throws IOException {
         writer.write(String.format(Locale.US, "%s,%s,%d,%d,%d,%s,%d,%.8f,%.8f,%.8f,%.8f,%.12f,%.12f",
-                algorithm.getLabel(), spec.getName(), dimension, populationSize, maxEvaluations, limitLabel(algorithm, limitSetting), accumulator.size(),
+                algorithm.resultLabel(eliteSize, localSearchFrequency, f, cr), spec.getName(), dimension, populationSize,
+                maxEvaluations, limitLabel(algorithm, limitSetting), accumulator.size(),
                 accumulator.mean(EEMetrics::getExplorationRatio), accumulator.stdev(EEMetrics::getExplorationRatio),
                 accumulator.mean(EEMetrics::getExploitationRatio), accumulator.stdev(EEMetrics::getExploitationRatio),
                 accumulator.mean(EEMetrics::getBestFitness), accumulator.stdev(EEMetrics::getBestFitness)));
@@ -213,9 +278,12 @@ public final class EEAnalysisRunner {
     }
 
     private static void writeRatios(BufferedWriter writer, EEAlgorithm algorithm, EEProblemSpec spec, int dimension, int populationSize,
-                                    int maxEvaluations, LimitSetting limitSetting, MetricAccumulator accumulator) throws IOException {
+                                    int maxEvaluations, LimitSetting limitSetting, int eliteSize,
+                                    int localSearchFrequency, double f, double cr,
+                                    MetricAccumulator accumulator) throws IOException {
         writer.write(String.format(Locale.US, "%s,%s,%d,%d,%d,%s,%d,%s,%s,%s,%s,%s,%s",
-                algorithm.getLabel(), spec.getName(), dimension, populationSize, maxEvaluations, limitLabel(algorithm, limitSetting), accumulator.size(),
+                algorithm.resultLabel(eliteSize, localSearchFrequency, f, cr), spec.getName(), dimension, populationSize,
+                maxEvaluations, limitLabel(algorithm, limitSetting), accumulator.size(),
                 pair(accumulator, EEMetrics::getSuccessfulExplorationRatio),
                 pair(accumulator, EEMetrics::getFailedExplorationRatio),
                 pair(accumulator, EEMetrics::getDeceptiveExplorationRatio),
@@ -248,11 +316,13 @@ public final class EEAnalysisRunner {
     }
 
     private static void writeTableRow(BufferedWriter writer, EEAlgorithm algorithm, EEProblemSpec spec, int dimension, int populationSize,
-                                      int maxEvaluations, LimitSetting limitSetting,
+                                      int maxEvaluations, LimitSetting limitSetting, int eliteSize,
+                                      int localSearchFrequency, double f, double cr,
                                       MetricAccumulator accumulator) throws IOException {
         writer.write(String.format(Locale.US,
                 "%s & %s & %d & %d & %d & %s & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.4f $\\pm$ %.4f & %.6g $\\pm$ %.6g \\\\%n",
-                algorithm.getLabel(), spec.getName(), dimension, populationSize, maxEvaluations, limitLabel(algorithm, limitSetting),
+                algorithm.resultLabel(eliteSize, localSearchFrequency, f, cr), spec.getName(), dimension, populationSize,
+                maxEvaluations, limitLabel(algorithm, limitSetting),
                 accumulator.mean(EEMetrics::getSuccessfulExplorationRatio), accumulator.stdev(EEMetrics::getSuccessfulExplorationRatio),
                 accumulator.mean(EEMetrics::getFailedExplorationRatio), accumulator.stdev(EEMetrics::getFailedExplorationRatio),
                 accumulator.mean(EEMetrics::getDeceptiveExplorationRatio), accumulator.stdev(EEMetrics::getDeceptiveExplorationRatio),

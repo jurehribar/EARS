@@ -84,6 +84,67 @@ sourceSets {
    }
 }
 
+def mdeExperimentPropertiesFile = file('config.properties')
+if (!mdeExperimentPropertiesFile.exists()) {
+    throw new GradleException('config.properties is required for MDE experiment tasks')
+}
+def mdeExperimentProps = new Properties()
+mdeExperimentPropertiesFile.withInputStream { mdeExperimentProps.load(it) }
+
+def mdeStrategyValue = mdeExperimentProps.getProperty('mde.strategy', 'rand').trim()
+def mdeAlgorithm
+if (mdeStrategyValue.equalsIgnoreCase('best')
+        || mdeStrategyValue.equalsIgnoreCase('MDE-best-1-bin')) {
+    mdeAlgorithm = 'MDE-best-1-bin'
+} else if (mdeStrategyValue.equalsIgnoreCase('rand')
+        || mdeStrategyValue.equalsIgnoreCase('MDE-rand-1-bin')) {
+    mdeAlgorithm = 'MDE-rand-1-bin'
+} else {
+    mdeAlgorithm = mdeStrategyValue
+}
+def mdeHistoryDir = mdeExperimentProps.getProperty('mde.historyDir', 'History/MDE').trim()
+def mdeAnalysisDir = mdeExperimentProps.getProperty('mde.analysisDir', 'EEAnalysis/MDE').trim()
+def mdeProblem = mdeExperimentProps.getProperty('mde.problem', 'Rastrigin').trim()
+def mdeDimension = mdeExperimentProps.getProperty('mde.dimension', '10').trim()
+def mdePopulation = mdeExperimentProps.getProperty('mde.population', '30').trim()
+def mdeEvaluations = mdeExperimentProps.getProperty('mde.evaluations', '20000').trim()
+def mdeRun = mdeExperimentProps.getProperty('mde.run', 'all').trim()
+def mdeEliteSize = mdeExperimentProps.getProperty('mde.eliteSize', '1').trim()
+def mdeLocalSearchFrequency = mdeExperimentProps.getProperty('mde.localSearchFrequency', '1').trim()
+def mdeF = mdeExperimentProps.getProperty('mde.F', '0.5').trim()
+def mdeCR = mdeExperimentProps.getProperty('mde.CR', '0.9').trim()
+
+def runMdeTask = tasks.register('runMdeEEExperiment', JavaExec) {
+    group = 'MDE experiments'
+    description = 'Run the logged MDE E/E experiment configured in config.properties.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.um.feri.ears.experiment.ee.EEExperimentRunner'
+    args mdeAlgorithm, mdeHistoryDir, mdeProblem, mdeDimension, mdePopulation,
+            mdeEvaluations, 'K', mdeRun, mdeEliteSize, mdeLocalSearchFrequency, mdeF, mdeCR
+}
+
+def analyzeMdeTask = tasks.register('analyzeMdeEEExperiment', JavaExec) {
+    group = 'MDE experiments'
+    description = 'Analyze the ten logged MDE runs configured in config.properties.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.um.feri.ears.experiment.ee.EEAnalysisRunner'
+    args mdeAlgorithm, mdeHistoryDir, mdeAnalysisDir, mdeProblem, mdeDimension,
+            mdePopulation, mdeEvaluations, 'K', mdeEliteSize, mdeLocalSearchFrequency, mdeF, mdeCR
+    mustRunAfter runMdeTask
+}
+
+tasks.register('runAndAnalyzeMdeEEExperiment') {
+    group = 'MDE experiments'
+    description = 'Run all ten configured MDE repetitions, then perform E/E analysis.'
+    if (mdeRun.equalsIgnoreCase('all')) {
+        dependsOn runMdeTask, analyzeMdeTask
+    } else {
+        doLast {
+            throw new GradleException('runAndAnalyzeMdeEEExperiment requires mde.run=all')
+        }
+    }
+}
+
 configurations {
     jar.archiveFileName = 'ears.jar'
 }
