@@ -137,8 +137,20 @@ final class EEWindowedSeries {
 
         try (BufferedWriter writer = Files.newBufferedWriter(seriesDir.resolve(stem + "-window-exploitation-types.plt"))) {
             writePlotHeader(writer, stem + "-window-exploitation-types.png");
-            writer.write("plot '" + overviewData + "' using 1:4 with lines linewidth 2 lc rgb 'red' title 'SuccesfullExploit', \\\n");
-            writer.write("     '" + overviewData + "' using 1:5 with lines linewidth 2 lc rgb 'blue' title 'UnSuccesfullExploit'\n");
+            writer.write("plot '" + overviewData + "' using 1:4 with lines linewidth 2 lc rgb 'black' title 'Successful exploitation', \\\n");
+            writer.write("     '" + overviewData + "' using 1:5 with lines linewidth 2 lc rgb 'gray' title 'Unsuccessful exploitation'\n");
+        }
+
+        // Article-style view: all six exploration/exploitation outcome ratios
+        // are displayed together using the color convention from the paper.
+        try (BufferedWriter writer = Files.newBufferedWriter(seriesDir.resolve(stem + "-window-all-types.plt"))) {
+            writePlotHeader(writer, stem + "-window-all-types.png");
+            writer.write("plot '" + explorationData + "' using 1:2 with lines linewidth 2 lc rgb 'blue' title 'Failed exploration', \\\n");
+            writer.write("     '" + explorationData + "' using 1:3 with lines linewidth 2 lc rgb 'red' title 'Successful exploration', \\\n");
+            writer.write("     '" + explorationData + "' using 1:4 with lines linewidth 2 lc rgb 'green' title 'Deceptive exploration', \\\n");
+            writer.write("     '" + explorationData + "' using 1:5 with lines linewidth 2 lc rgb 'orange' title 'Successful rejection', \\\n");
+            writer.write("     '" + overviewData + "' using 1:4 with lines linewidth 2 lc rgb 'black' title 'Successful exploitation', \\\n");
+            writer.write("     '" + overviewData + "' using 1:5 with lines linewidth 2 lc rgb 'gray' title 'Unsuccessful exploitation'\n");
         }
     }
 
