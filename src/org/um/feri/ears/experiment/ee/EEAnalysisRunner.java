@@ -175,6 +175,7 @@ public final class EEAnalysisRunner {
         }
 
         writeGnuplotScripts(seriesDir, stem);
+        EEWindowedSeries.write(seriesDir, stem, nodes);
     }
 
     private static void writeGnuplotScripts(Path seriesDir, String stem) throws IOException {
