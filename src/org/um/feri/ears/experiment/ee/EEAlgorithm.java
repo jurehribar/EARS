@@ -4,6 +4,8 @@ import org.um.feri.ears.algorithms.NumberAlgorithm;
 import org.um.feri.ears.algorithms.so.abc.ABCLogging;
 import org.um.feri.ears.algorithms.so.de.DE;
 import org.um.feri.ears.algorithms.so.de.DELogging;
+import org.um.feri.ears.algorithms.so.de.mde.GradientDescentLocalSearch;
+import org.um.feri.ears.algorithms.so.de.mde.MDELogging;
 
 public enum EEAlgorithm {
     ABC("ABC", true) {
@@ -27,7 +29,34 @@ public enum EEAlgorithm {
         public String filePrefix(LimitSetting limitSetting) {
             return getLabel();
         }
+    },
+    MDE_RAND_1_BIN("MDE-rand-1-bin", false) {
+        @Override
+        public NumberAlgorithm create(int populationSize, LimitSetting limitSetting, int dimension) {
+            return createMde(DE.Strategy.DE_RAND_1_BIN, populationSize);
+        }
+
+        @Override
+        public String filePrefix(LimitSetting limitSetting) {
+            return getLabel();
+        }
+    },
+    MDE_BEST_1_BIN("MDE-best-1-bin", false) {
+        @Override
+        public NumberAlgorithm create(int populationSize, LimitSetting limitSetting, int dimension) {
+            return createMde(DE.Strategy.DE_BEST_1_BIN, populationSize);
+        }
+
+        @Override
+        public String filePrefix(LimitSetting limitSetting) {
+            return getLabel();
+        }
     };
+
+    private static final double MDE_F = 0.5;
+    private static final double MDE_CR = 0.9;
+    private static final int MDE_ELITE_SIZE = 1;
+    private static final int MDE_LOCAL_SEARCH_FREQUENCY = 1;
 
     private final String label;
     private final boolean usesLimit;
@@ -47,6 +76,11 @@ public enum EEAlgorithm {
 
     public boolean usesLimit() {
         return usesLimit;
+    }
+
+    private static NumberAlgorithm createMde(DE.Strategy strategy, int populationSize) {
+        return new MDELogging(strategy, populationSize, MDE_F, MDE_CR,
+                MDE_ELITE_SIZE, MDE_LOCAL_SEARCH_FREQUENCY, new GradientDescentLocalSearch());
     }
 
     public static EEAlgorithm fromLabel(String label) {
