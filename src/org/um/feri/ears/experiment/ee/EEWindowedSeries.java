@@ -159,7 +159,10 @@ final class EEWindowedSeries {
         writer.write("set output '" + outputFile + "'\n");
         writer.write("set xlabel 'Evaluation index (100-evaluation windows)'\n");
         writer.write("set ylabel 'Ratio'\n");
-        writer.write("set yrange [0:1]\n");
+        // Keep ratios at exactly 0 and 1 visibly separated from the plot border.
+        writer.write("set yrange [-0.02:1.02]\n");
+        writer.write("set ytics 0,0.2,1\n");
+        writer.write("set grid ytics lc rgb '#dddddd' linewidth 1\n");
     }
 
     static final class Window {
