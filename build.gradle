@@ -145,6 +145,14 @@ tasks.register('runAndAnalyzeMdeEEExperiment') {
     }
 }
 
+tasks.register('runSOBenchmarkJureH', JavaExec) {
+    group = 'MDE experiments'
+    description = 'Run JureHBenchmark using the MDE strategy, elite size, and local-search frequency from config.properties.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.um.feri.ears.examples.SOBenchmarkJureH'
+    args mdeStrategyValue, mdeEliteSize, mdeLocalSearchFrequency
+}
+
 configurations {
     jar.archiveFileName = 'ears.jar'
 }
