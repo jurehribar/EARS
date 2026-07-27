@@ -8,14 +8,16 @@ public final class AttractorLocalSearch {
 
     private static final int MAX_STEP_REDUCTIONS = 2;
     private static final int MAX_EVALUATIONS = 100_000;
-    // Intentionally retained between find calls to match the original per-run local-search instance.
-    private double step;
+    private final double initialStep;
 
     public AttractorLocalSearch(double initialStep) {
-        this.step = initialStep;
+        this.initialStep = initialStep;
     }
 
     public Attractor find(DoubleProblem problem, double[] start) {
+        // Basin identification must be independent of the order in which nodes
+        // are analyzed. Each point therefore starts with the configured step.
+        double step = initialStep;
         double[] best = Arrays.copyOf(start, start.length);
         double bestFitness = problem.eval(best);
         int evaluations = 1;
