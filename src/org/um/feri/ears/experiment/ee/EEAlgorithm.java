@@ -30,6 +30,28 @@ public enum EEAlgorithm {
             return getLabel();
         }
     },
+    DE_RAND_1_BIN_OLD_NEW("DE-rand-1-binOldNew", false) {
+        @Override
+        public NumberAlgorithm create(int populationSize, LimitSetting limitSetting, int dimension) {
+            return createDeOldNew(DE.Strategy.DE_RAND_1_BIN, populationSize);
+        }
+
+        @Override
+        public String filePrefix(LimitSetting limitSetting) {
+            return getLabel();
+        }
+    },
+    DE_BEST_1_BIN_OLD_NEW("DE-best-1-binOldNew", false) {
+        @Override
+        public NumberAlgorithm create(int populationSize, LimitSetting limitSetting, int dimension) {
+            return createDeOldNew(DE.Strategy.DE_BEST_1_BIN, populationSize);
+        }
+
+        @Override
+        public String filePrefix(LimitSetting limitSetting) {
+            return getLabel();
+        }
+    },
     MDE_RAND_1_BIN("MDE-rand-1-bin", false) {
         @Override
         public NumberAlgorithm create(int populationSize, LimitSetting limitSetting, int dimension) {
@@ -82,6 +104,10 @@ public enum EEAlgorithm {
         return this == MDE_RAND_1_BIN || this == MDE_BEST_1_BIN;
     }
 
+    public boolean isDeOldNew() {
+        return this == DE_RAND_1_BIN_OLD_NEW || this == DE_BEST_1_BIN_OLD_NEW;
+    }
+
     public NumberAlgorithm create(int populationSize, LimitSetting limitSetting, int dimension,
                                   int eliteSize, int localSearchFrequency) {
         return create(populationSize, limitSetting, dimension, eliteSize, localSearchFrequency,
@@ -90,6 +116,12 @@ public enum EEAlgorithm {
 
     public NumberAlgorithm create(int populationSize, LimitSetting limitSetting, int dimension,
                                   int eliteSize, int localSearchFrequency, double f, double cr) {
+        if (isDeOldNew()) {
+            DE.Strategy strategy = this == DE_BEST_1_BIN_OLD_NEW
+                    ? DE.Strategy.DE_BEST_1_BIN
+                    : DE.Strategy.DE_RAND_1_BIN;
+            return createDeOldNew(strategy, populationSize, f, cr);
+        }
         if (!isMde()) {
             return create(populationSize, limitSetting, dimension);
         }
@@ -129,6 +161,15 @@ public enum EEAlgorithm {
                                              int eliteSize, int localSearchFrequency, double f, double cr) {
         return new MDELogging(strategy, populationSize, f, cr,
                 eliteSize, localSearchFrequency, new GradientDescentLocalSearch());
+    }
+
+    private static NumberAlgorithm createDeOldNew(DE.Strategy strategy, int populationSize) {
+        return createDeOldNew(strategy, populationSize, DEFAULT_MDE_F, DEFAULT_MDE_CR);
+    }
+
+    private static NumberAlgorithm createDeOldNew(DE.Strategy strategy, int populationSize,
+                                                   double f, double cr) {
+        return new DELogging(strategy, populationSize, f, cr, true);
     }
 
     public static EEAlgorithm fromLabel(String label) {

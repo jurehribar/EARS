@@ -112,8 +112,8 @@ public final class EEExperimentRunner {
         if (args.length <= index) {
             return defaultValue;
         }
-        if (!algorithm.isMde()) {
-            throw new IllegalArgumentException(name + " is supported only for MDE algorithms");
+        if (!algorithm.isMde() && !algorithm.isDeOldNew()) {
+            throw new IllegalArgumentException(name + " is supported only for MDE and OldNew DE algorithms");
         }
         return Integer.parseInt(args[index]);
     }
@@ -123,16 +123,16 @@ public final class EEExperimentRunner {
         if (args.length <= index) {
             return defaultValue;
         }
-        if (!algorithm.isMde()) {
-            throw new IllegalArgumentException(name + " is supported only for MDE algorithms");
+        if (!algorithm.isMde() && !algorithm.isDeOldNew()) {
+            throw new IllegalArgumentException(name + " is supported only for MDE and OldNew DE algorithms");
         }
         return Double.parseDouble(args[index]);
     }
 
     private static void validateMdeParameterPair(String[] args, EEAlgorithm algorithm) {
-        if (algorithm.isMde() && (args.length == 9 || args.length == 11)) {
+        if ((algorithm.isMde() || algorithm.isDeOldNew()) && (args.length == 9 || args.length == 11)) {
             throw new IllegalArgumentException(
-                    "Provide MDE parameters as complete pairs: elite size/frequency and F/CR");
+                    "Provide experiment parameters as complete pairs: elite size/frequency and F/CR");
         }
         if (args.length > 12) {
             throw new IllegalArgumentException("Too many experiment arguments");

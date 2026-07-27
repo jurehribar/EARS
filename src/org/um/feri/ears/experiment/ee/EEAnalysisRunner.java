@@ -22,6 +22,11 @@ public final class EEAnalysisRunner {
 
     public static void main(String[] args) throws IOException {
         Locale.setDefault(Locale.US);
+        if (args.length > 0 && "--compare".equalsIgnoreCase(args[0])) {
+            analyzeComparison(args);
+            return;
+        }
+
         Path historyDir;
         Path outputDir;
         EEAlgorithm selectedAlgorithm = null;
@@ -106,6 +111,70 @@ public final class EEAnalysisRunner {
             }
             writeTableFooter(table);
         }
+    }
+
+    private static void analyzeComparison(String[] args) throws IOException {
+        if (args.length != 14) {
+            throw new IllegalArgumentException(
+                    "Usage: --compare <MDE algorithm> <DE algorithm> <historyDir> <outputDir> "
+                            + "<problem> <dimension> <population> <evaluations> <limit> "
+                            + "<eliteSize> <localSearchFrequency> <F> <CR>");
+        }
+
+        EEAlgorithm mdeAlgorithm = EEAlgorithm.fromLabel(args[1]);
+        EEAlgorithm deAlgorithm = EEAlgorithm.fromLabel(args[2]);
+        if (!mdeAlgorithm.isMde()) {
+            throw new IllegalArgumentException("First comparison algorithm must be MDE");
+        }
+        if (deAlgorithm.isMde() || deAlgorithm.usesLimit()) {
+            throw new IllegalArgumentException("Second comparison algorithm must be DE");
+        }
+
+        Path historyDir = Path.of(args[3]);
+        Path outputDir = Path.of(args[4]);
+        EEProblemSpec spec = findProblem(args[5]);
+        int dimension = Integer.parseInt(args[6]);
+        int populationSize = Integer.parseInt(args[7]);
+        int maxEvaluations = Integer.parseInt(args[8]);
+        LimitSetting limitSetting = findLimit(args[9]);
+        int eliteSize = Integer.parseInt(args[10]);
+        int localSearchFrequency = Integer.parseInt(args[11]);
+        double f = Double.parseDouble(args[12]);
+        double cr = Double.parseDouble(args[13]);
+
+        Files.createDirectories(outputDir);
+        MetricAccumulator mdeAccumulator = analyzeCombination(mdeAlgorithm, historyDir, outputDir, spec,
+                dimension, populationSize, maxEvaluations, limitSetting,
+                eliteSize, localSearchFrequency, f, cr);
+        MetricAccumulator deAccumulator = analyzeCombination(deAlgorithm, historyDir, outputDir, spec,
+                dimension, populationSize, maxEvaluations, limitSetting,
+                eliteSize, localSearchFrequency, f, cr);
+
+        try (BufferedWriter summary = Files.newBufferedWriter(outputDir.resolve("ee-summary.csv"));
+             BufferedWriter ratios = Files.newBufferedWriter(outputDir.resolve("ee-ratios.csv"));
+             BufferedWriter table = Files.newBufferedWriter(outputDir.resolve("ee-table.tex"))) {
+            writeSummaryHeader(summary);
+            writeRatiosHeader(ratios);
+            writeTableHeader(table);
+            writeAggregateRow(summary, ratios, table, mdeAlgorithm, spec, dimension, populationSize,
+                    maxEvaluations, limitSetting, eliteSize, localSearchFrequency, f, cr, mdeAccumulator);
+            writeAggregateRow(summary, ratios, table, deAlgorithm, spec, dimension, populationSize,
+                    maxEvaluations, limitSetting, eliteSize, localSearchFrequency, f, cr, deAccumulator);
+            writeTableFooter(table);
+        }
+    }
+
+    private static void writeAggregateRow(BufferedWriter summary, BufferedWriter ratios, BufferedWriter table,
+                                          EEAlgorithm algorithm, EEProblemSpec spec, int dimension,
+                                          int populationSize, int maxEvaluations, LimitSetting limitSetting,
+                                          int eliteSize, int localSearchFrequency, double f, double cr,
+                                          MetricAccumulator accumulator) throws IOException {
+        writeSummary(summary, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting,
+                eliteSize, localSearchFrequency, f, cr, accumulator);
+        writeRatios(ratios, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting,
+                eliteSize, localSearchFrequency, f, cr, accumulator);
+        writeTableRow(table, algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting,
+                eliteSize, localSearchFrequency, f, cr, accumulator);
     }
 
     private static EEProblemSpec findProblem(String name) {

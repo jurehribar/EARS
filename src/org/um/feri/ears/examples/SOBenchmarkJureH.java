@@ -26,10 +26,12 @@ public class SOBenchmarkJureH {
                 strategy.label, eliteSize, localSearchFrequency);
 
         ArrayList<NumberAlgorithm> algorithms = new ArrayList<>();
-        algorithms.add(new MDE(strategy, 30, 0.5, 0.9, eliteSize, localSearchFrequency,
+        algorithms.add(new MDE(strategy, 100, 0.5, 0.9, eliteSize, localSearchFrequency,
                 new GradientDescentLocalSearch()));
-        algorithms.add(new DE(strategy));
-
+        //algorithms.add(new MDE(DE.Strategy.DE_BEST_1_BIN, 100, 0.5, 0.9, eliteSize, localSearchFrequency,
+        //        new GradientDescentLocalSearch()));
+        algorithms.add(new DE(strategy, 100, 0.5, 0.9));
+        //algorithms.add(new DE(DE.Strategy.DE_BEST_1_BIN, 100, 0.5, 0.9));
         JureHBenchmark bench = new JureHBenchmark(); // benchmark with prepared tasks and settings
 
         bench.addAlgorithms(algorithms);  // register the algorithms in the benchmark

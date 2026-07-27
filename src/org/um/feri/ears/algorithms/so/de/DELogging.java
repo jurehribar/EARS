@@ -26,6 +26,7 @@ public class DELogging extends NumberAlgorithm {
     private int popSize;
     @AlgorithmParameter
     private DE.Strategy strategy;
+    private final boolean targetParentOnly;
 
     private static final double Finit = 0.5;
     private static final double CRinit = 0.9;
@@ -64,8 +65,14 @@ public class DELogging extends NumberAlgorithm {
     }
 
     public DELogging(DE.Strategy strategy, int popSize, double F, double CR) {
+        this(strategy, popSize, F, CR, false);
+    }
+
+    public DELogging(DE.Strategy strategy, int popSize, double F, double CR,
+                     boolean targetParentOnly) {
         this.strategy = strategy;
         this.popSize = popSize;
+        this.targetParentOnly = targetParentOnly;
         this.memF = F;
         this.memCR = CR;
         this.F = F;
@@ -123,7 +130,7 @@ public class DELogging extends NumberAlgorithm {
                     tmp[kk] = task.problem.makeFeasible(tmp[kk], kk);
                 }
                 NumberSolution<Double> br = new NumberSolution<>(Util.toDoubleArrayList(tmp));
-                br.parents = parents;
+                br.parents = targetParentOnly ? parents(pold[i]) : parents;
                 task.eval(br);
 
                 DESolution trialCost = new DESolution(br, tmpF, tmpCR);

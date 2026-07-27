@@ -132,8 +132,9 @@ public class MDE extends NumberAlgorithm {
         this.localSearchFrequency = Math.max(1, localSearchFrequency);
         this.localSearch          = localSearch;
         au = new Author("mde", "mde@ears");
+        String mdeId = "M" + strategy.label;
         ai = new AlgorithmInfo(
-                "MDE",
+                mdeId,
                 "Memetic Differential Evolution (" + strategy.label + " + local search)",
                 strategy.label + " from: R. Storn & K. Price, Differential Evolution - "
                 + "A Simple and Efficient Heuristic for Global Optimization over "

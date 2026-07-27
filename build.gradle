@@ -93,14 +93,17 @@ mdeExperimentPropertiesFile.withInputStream { mdeExperimentProps.load(it) }
 
 def mdeStrategyValue = mdeExperimentProps.getProperty('mde.strategy', 'rand').trim()
 def mdeAlgorithm
+def deAlgorithm
 if (mdeStrategyValue.equalsIgnoreCase('best')
         || mdeStrategyValue.equalsIgnoreCase('MDE-best-1-bin')) {
     mdeAlgorithm = 'MDE-best-1-bin'
+    deAlgorithm = 'DE-best-1-binOldNew'
 } else if (mdeStrategyValue.equalsIgnoreCase('rand')
         || mdeStrategyValue.equalsIgnoreCase('MDE-rand-1-bin')) {
     mdeAlgorithm = 'MDE-rand-1-bin'
+    deAlgorithm = 'DE-rand-1-binOldNew'
 } else {
-    mdeAlgorithm = mdeStrategyValue
+    throw new GradleException("Unsupported mde.strategy '${mdeStrategyValue}'. Use rand or best.")
 }
 def mdeHistoryDir = mdeExperimentProps.getProperty('mde.historyDir', 'History/MDE').trim()
 def mdeAnalysisDir = mdeExperimentProps.getProperty('mde.analysisDir', 'EEAnalysis/MDE').trim()
@@ -133,6 +136,27 @@ def analyzeMdeTask = tasks.register('analyzeMdeEEExperiment', JavaExec) {
     mustRunAfter runMdeTask
 }
 
+def runDeTask = tasks.register('runDeEEExperiment', JavaExec) {
+    group = 'MDE experiments'
+    description = 'Run the matching target-parent OldNew DE E/E experiment configured in config.properties.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.um.feri.ears.experiment.ee.EEExperimentRunner'
+    args deAlgorithm, mdeHistoryDir, mdeProblem, mdeDimension, mdePopulation,
+            mdeEvaluations, 'K', mdeRun, mdeEliteSize, mdeLocalSearchFrequency, mdeF, mdeCR
+    mustRunAfter runMdeTask
+}
+
+def analyzeMdeVsDeTask = tasks.register('analyzeMdeVsDeExperiment', JavaExec) {
+    group = 'MDE experiments'
+    description = 'Analyze matching MDE and OldNew DE histories into the same aggregate outputs.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.um.feri.ears.experiment.ee.EEAnalysisRunner'
+    args '--compare', mdeAlgorithm, deAlgorithm, mdeHistoryDir, mdeAnalysisDir,
+            mdeProblem, mdeDimension, mdePopulation, mdeEvaluations, 'K',
+            mdeEliteSize, mdeLocalSearchFrequency, mdeF, mdeCR
+    mustRunAfter runMdeTask, runDeTask
+}
+
 tasks.register('runAndAnalyzeMdeEEExperiment') {
     group = 'MDE experiments'
     description = 'Run all ten configured MDE repetitions, then perform E/E analysis.'
@@ -141,6 +165,18 @@ tasks.register('runAndAnalyzeMdeEEExperiment') {
     } else {
         doLast {
             throw new GradleException('runAndAnalyzeMdeEEExperiment requires mde.run=all')
+        }
+    }
+}
+
+tasks.register('runAndAnalyzeMdeVsDeExperiment') {
+    group = 'MDE experiments'
+    description = 'Run MDE, run matching OldNew DE, then analyze both sequentially.'
+    if (mdeRun.equalsIgnoreCase('all')) {
+        dependsOn runMdeTask, runDeTask, analyzeMdeVsDeTask
+    } else {
+        doLast {
+            throw new GradleException('runAndAnalyzeMdeVsDeExperiment requires mde.run=all')
         }
     }
 }
