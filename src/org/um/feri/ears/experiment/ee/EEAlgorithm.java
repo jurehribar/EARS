@@ -79,6 +79,7 @@ public enum EEAlgorithm {
     static final double DEFAULT_MDE_CR = 0.9;
     static final int DEFAULT_MDE_ELITE_SIZE = 1;
     static final int DEFAULT_MDE_LOCAL_SEARCH_FREQUENCY = 1;
+    static final int DEFAULT_MDE_LOCAL_SEARCH_START_FE = 0;
 
     private final String label;
     private final boolean usesLimit;
@@ -116,6 +117,13 @@ public enum EEAlgorithm {
 
     public NumberAlgorithm create(int populationSize, LimitSetting limitSetting, int dimension,
                                   int eliteSize, int localSearchFrequency, double f, double cr) {
+        return create(populationSize, limitSetting, dimension, eliteSize, localSearchFrequency,
+                f, cr, DEFAULT_MDE_LOCAL_SEARCH_START_FE);
+    }
+
+    public NumberAlgorithm create(int populationSize, LimitSetting limitSetting, int dimension,
+                                  int eliteSize, int localSearchFrequency, double f, double cr,
+                                  int localSearchStartEvaluations) {
         if (isDeOldNew()) {
             DE.Strategy strategy = this == DE_BEST_1_BIN_OLD_NEW
                     ? DE.Strategy.DE_BEST_1_BIN
@@ -134,10 +142,14 @@ public enum EEAlgorithm {
         if (localSearchFrequency < 1) {
             throw new IllegalArgumentException("MDE local-search frequency must be positive");
         }
+        if (localSearchStartEvaluations < 0) {
+            throw new IllegalArgumentException("MDE local-search start evaluations must be non-negative");
+        }
         DE.Strategy strategy = this == MDE_BEST_1_BIN
                 ? DE.Strategy.DE_BEST_1_BIN
                 : DE.Strategy.DE_RAND_1_BIN;
-        return createMde(strategy, populationSize, eliteSize, localSearchFrequency, f, cr);
+        return createMde(strategy, populationSize, eliteSize, localSearchFrequency,
+                f, cr, localSearchStartEvaluations);
     }
 
     public String resultLabel(int eliteSize, int localSearchFrequency) {
@@ -145,22 +157,31 @@ public enum EEAlgorithm {
     }
 
     public String resultLabel(int eliteSize, int localSearchFrequency, double f, double cr) {
+        return resultLabel(eliteSize, localSearchFrequency, f, cr, DEFAULT_MDE_LOCAL_SEARCH_START_FE);
+    }
+
+    public String resultLabel(int eliteSize, int localSearchFrequency, double f, double cr,
+                              int localSearchStartEvaluations) {
         if (!isMde()) {
             return getLabel();
         }
         return getLabel() + "-elite" + eliteSize + "-freq" + localSearchFrequency
+                + "-startFE" + localSearchStartEvaluations
                 + "-F" + Double.toString(f) + "-CR" + Double.toString(cr);
     }
 
     private static NumberAlgorithm createMde(DE.Strategy strategy, int populationSize) {
         return createMde(strategy, populationSize, DEFAULT_MDE_ELITE_SIZE,
-                DEFAULT_MDE_LOCAL_SEARCH_FREQUENCY, DEFAULT_MDE_F, DEFAULT_MDE_CR);
+                DEFAULT_MDE_LOCAL_SEARCH_FREQUENCY, DEFAULT_MDE_F, DEFAULT_MDE_CR,
+                DEFAULT_MDE_LOCAL_SEARCH_START_FE);
     }
 
     private static NumberAlgorithm createMde(DE.Strategy strategy, int populationSize,
-                                             int eliteSize, int localSearchFrequency, double f, double cr) {
+                                             int eliteSize, int localSearchFrequency, double f, double cr,
+                                             int localSearchStartEvaluations) {
         return new MDELogging(strategy, populationSize, f, cr,
-                eliteSize, localSearchFrequency, new GradientDescentLocalSearch());
+                eliteSize, localSearchFrequency, localSearchStartEvaluations,
+                new GradientDescentLocalSearch());
     }
 
     private static NumberAlgorithm createDeOldNew(DE.Strategy strategy, int populationSize) {

@@ -16,17 +16,22 @@ public class SOBenchmarkJureH {
         DE.Strategy strategy = parseStrategy(args.length > 0 ? args[0] : "rand");
         int eliteSize = parseNonNegativeInt(args, 1, 5, "elite size");
         int localSearchFrequency = parsePositiveInt(args, 2, 1, "local-search frequency");
-        if (args.length > 3) {
+        int localSearchStartEvaluations = parseNonNegativeInt(args, 3, 0,
+                "local-search start evaluations");
+        if (args.length > 4) {
             throw new IllegalArgumentException(
-                    "Usage: SOBenchmarkJureH [rand|best] [eliteSize>=0] [localSearchFrequency>=1]");
+                    "Usage: SOBenchmarkJureH [rand|best] [eliteSize>=0] "
+                            + "[localSearchFrequency>=1] [localSearchStartEvaluations>=0]");
         }
 
         Benchmark.printInfo = false; //prints one on one results
-        System.out.printf("Running JureH benchmark: strategy=%s, eliteSize=%d, localSearchFrequency=%d%n",
-                strategy.label, eliteSize, localSearchFrequency);
+        System.out.printf("Running JureH benchmark: strategy=%s, eliteSize=%d, "
+                        + "localSearchFrequency=%d, localSearchStartEvaluations=%d%n",
+                strategy.label, eliteSize, localSearchFrequency, localSearchStartEvaluations);
 
         ArrayList<NumberAlgorithm> algorithms = new ArrayList<>();
         algorithms.add(new MDE(strategy, 100, 0.5, 0.9, eliteSize, localSearchFrequency,
+                localSearchStartEvaluations,
                 new GradientDescentLocalSearch()));
         //algorithms.add(new MDE(DE.Strategy.DE_BEST_1_BIN, 100, 0.5, 0.9, eliteSize, localSearchFrequency,
         //        new GradientDescentLocalSearch()));

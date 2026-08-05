@@ -35,16 +35,20 @@ public final class EEExperimentRunner {
                     EEAlgorithm.DEFAULT_MDE_LOCAL_SEARCH_FREQUENCY, "local-search frequency", algorithm);
             double f = optionalMdeDoubleParameter(args, 10, EEAlgorithm.DEFAULT_MDE_F, "F", algorithm);
             double cr = optionalMdeDoubleParameter(args, 11, EEAlgorithm.DEFAULT_MDE_CR, "CR", algorithm);
+            int localSearchStartEvaluations = optionalMdeStartParameter(args, 12,
+                    EEAlgorithm.DEFAULT_MDE_LOCAL_SEARCH_START_FE, algorithm);
             validateMdeParameterPair(args, algorithm);
             if (args[7].equalsIgnoreCase("all")) {
                 for (int run = 0; run < REPETITIONS; run++) {
                     runOne(algorithm, outputDir, spec, dimension, populationSize, maxEvaluations,
-                            limitSetting, run, eliteSize, localSearchFrequency, f, cr);
+                            limitSetting, run, eliteSize, localSearchFrequency, f, cr,
+                            localSearchStartEvaluations);
                 }
             } else {
                 int run = Integer.parseInt(args[7]);
                 runOne(algorithm, outputDir, spec, dimension, populationSize, maxEvaluations,
-                        limitSetting, run, eliteSize, localSearchFrequency, f, cr);
+                        limitSetting, run, eliteSize, localSearchFrequency, f, cr,
+                        localSearchStartEvaluations);
             }
             return;
         }
@@ -129,12 +133,23 @@ public final class EEExperimentRunner {
         return Double.parseDouble(args[index]);
     }
 
+    private static int optionalMdeStartParameter(String[] args, int index, int defaultValue,
+                                                 EEAlgorithm algorithm) {
+        if (args.length <= index) {
+            return defaultValue;
+        }
+        if (!algorithm.isMde()) {
+            throw new IllegalArgumentException("local-search start evaluations are supported only for MDE algorithms");
+        }
+        return Integer.parseInt(args[index]);
+    }
+
     private static void validateMdeParameterPair(String[] args, EEAlgorithm algorithm) {
         if ((algorithm.isMde() || algorithm.isDeOldNew()) && (args.length == 9 || args.length == 11)) {
             throw new IllegalArgumentException(
                     "Provide experiment parameters as complete pairs: elite size/frequency and F/CR");
         }
-        if (args.length > 12) {
+        if (args.length > 13) {
             throw new IllegalArgumentException("Too many experiment arguments");
         }
     }
@@ -143,19 +158,21 @@ public final class EEExperimentRunner {
                                int populationSize, int maxEvaluations, LimitSetting limitSetting, int run) throws IOException {
         runOne(algorithm, outputDir, spec, dimension, populationSize, maxEvaluations, limitSetting, run,
                 EEAlgorithm.DEFAULT_MDE_ELITE_SIZE, EEAlgorithm.DEFAULT_MDE_LOCAL_SEARCH_FREQUENCY,
-                EEAlgorithm.DEFAULT_MDE_F, EEAlgorithm.DEFAULT_MDE_CR);
+                EEAlgorithm.DEFAULT_MDE_F, EEAlgorithm.DEFAULT_MDE_CR,
+                EEAlgorithm.DEFAULT_MDE_LOCAL_SEARCH_START_FE);
     }
 
     private static void runOne(EEAlgorithm algorithm, Path outputDir, EEProblemSpec spec, int dimension,
                                int populationSize, int maxEvaluations, LimitSetting limitSetting, int run,
-                               int eliteSize, int localSearchFrequency, double f, double cr) throws IOException {
+                               int eliteSize, int localSearchFrequency, double f, double cr,
+                               int localSearchStartEvaluations) throws IOException {
         DoubleProblem problem = spec.createProblem(dimension);
         Task<NumberSolution<Double>, DoubleProblem> task = new Task<>(
                 problem, StopCriterion.EVALUATIONS, maxEvaluations, 0, 0, 0.001);
         task.enableAncestorLogging();
 
         NumberAlgorithm eeAlgorithm = algorithm.create(populationSize, limitSetting, dimension,
-                eliteSize, localSearchFrequency, f, cr);
+                eliteSize, localSearchFrequency, f, cr, localSearchStartEvaluations);
         try {
             eeAlgorithm.execute(task);
         } catch (StopCriterionException e) {
@@ -165,28 +182,39 @@ public final class EEExperimentRunner {
         }
 
         OldCsvAncestorSaver.save(outputDir.resolve(fileStem(algorithm, spec, dimension, populationSize,
-                maxEvaluations, limitSetting, run, eliteSize, localSearchFrequency, f, cr) + ".csv"), task);
+                maxEvaluations, limitSetting, run, eliteSize, localSearchFrequency, f, cr,
+                localSearchStartEvaluations) + ".csv"), task);
     }
 
     static String fileStem(EEAlgorithm algorithm, EEProblemSpec spec, int dimension, int populationSize, int maxEvaluations,
                            LimitSetting limitSetting, int run) {
         return fileStem(algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, run,
                 EEAlgorithm.DEFAULT_MDE_ELITE_SIZE, EEAlgorithm.DEFAULT_MDE_LOCAL_SEARCH_FREQUENCY,
-                EEAlgorithm.DEFAULT_MDE_F, EEAlgorithm.DEFAULT_MDE_CR);
+                EEAlgorithm.DEFAULT_MDE_F, EEAlgorithm.DEFAULT_MDE_CR,
+                EEAlgorithm.DEFAULT_MDE_LOCAL_SEARCH_START_FE);
     }
 
     static String fileStem(EEAlgorithm algorithm, EEProblemSpec spec, int dimension, int populationSize,
                            int maxEvaluations, LimitSetting limitSetting, int run,
                            int eliteSize, int localSearchFrequency) {
         return fileStem(algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, run,
-                eliteSize, localSearchFrequency, EEAlgorithm.DEFAULT_MDE_F, EEAlgorithm.DEFAULT_MDE_CR);
+                eliteSize, localSearchFrequency, EEAlgorithm.DEFAULT_MDE_F, EEAlgorithm.DEFAULT_MDE_CR,
+                EEAlgorithm.DEFAULT_MDE_LOCAL_SEARCH_START_FE);
     }
 
     static String fileStem(EEAlgorithm algorithm, EEProblemSpec spec, int dimension, int populationSize,
                            int maxEvaluations, LimitSetting limitSetting, int run,
                            int eliteSize, int localSearchFrequency, double f, double cr) {
+        return fileStem(algorithm, spec, dimension, populationSize, maxEvaluations, limitSetting, run,
+                eliteSize, localSearchFrequency, f, cr, EEAlgorithm.DEFAULT_MDE_LOCAL_SEARCH_START_FE);
+    }
+
+    static String fileStem(EEAlgorithm algorithm, EEProblemSpec spec, int dimension, int populationSize,
+                           int maxEvaluations, LimitSetting limitSetting, int run,
+                           int eliteSize, int localSearchFrequency, double f, double cr,
+                           int localSearchStartEvaluations) {
         String prefix = algorithm.isMde()
-                ? algorithm.resultLabel(eliteSize, localSearchFrequency, f, cr)
+                ? algorithm.resultLabel(eliteSize, localSearchFrequency, f, cr, localSearchStartEvaluations)
                 : algorithm.filePrefix(limitSetting);
         return prefix + "_" + spec.getName() + "D" + dimension
                 + "R" + run + "P" + populationSize + "F" + maxEvaluations;

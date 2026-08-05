@@ -63,6 +63,12 @@ public class MDE extends NumberAlgorithm {
      */
     @AlgorithmParameter(name = "local search frequency")
     private final int localSearchFrequency;
+    /**
+     * Number of completed function evaluations required before local search
+     * becomes eligible. 0 preserves the original generation-based schedule.
+     */
+    @AlgorithmParameter(name = "local search start evaluations")
+    private final int localSearchStartEvaluations;
     /** Pluggable local search strategy. null = no local search (pure DE/rand/1/bin). */
     private final LocalSearch localSearch;
     // Internal state
@@ -109,11 +115,30 @@ public class MDE extends NumberAlgorithm {
     public MDE(int popSize, double F, double CR,
                int eliteSize, int localSearchFrequency,
                LocalSearch localSearch) {
-        this(DE.Strategy.DE_RAND_1_BIN, popSize, F, CR, eliteSize, localSearchFrequency, localSearch);
+        this(DE.Strategy.DE_RAND_1_BIN, popSize, F, CR, eliteSize, localSearchFrequency,
+                0, localSearch);
+    }
+
+    public MDE(int popSize, double F, double CR,
+               int eliteSize, int localSearchFrequency, int localSearchStartEvaluations,
+               LocalSearch localSearch) {
+        this(DE.Strategy.DE_RAND_1_BIN, popSize, F, CR, eliteSize, localSearchFrequency,
+                localSearchStartEvaluations, localSearch);
     }
 
     public MDE(DE.Strategy strategy, int popSize, double F, double CR,
                int eliteSize, int localSearchFrequency,
+               LocalSearch localSearch) {
+        this(strategy, popSize, F, CR, eliteSize, localSearchFrequency, 0, localSearch);
+    }
+
+    /**
+     * Full constructor including the function-evaluation gate for local search.
+     *
+     * @param localSearchStartEvaluations completed function evaluations required before local search is eligible
+     */
+    public MDE(DE.Strategy strategy, int popSize, double F, double CR,
+               int eliteSize, int localSearchFrequency, int localSearchStartEvaluations,
                LocalSearch localSearch) {
         if (popSize < 4)
             throw new IllegalArgumentException("Population size must be at least 4.");
@@ -124,12 +149,15 @@ public class MDE extends NumberAlgorithm {
         if (strategy != DE.Strategy.DE_RAND_1_BIN
                 && strategy != DE.Strategy.DE_BEST_1_BIN)
             throw new IllegalArgumentException("MDE supports only DE/rand/1/bin and DE/best/1/bin.");
+        if (localSearchStartEvaluations < 0)
+            throw new IllegalArgumentException("Local-search start evaluations must be non-negative.");
         this.strategy             = strategy;
         this.popSize              = popSize;
         this.F                    = F;
         this.CR                   = CR;
         this.eliteSize            = Math.max(0, eliteSize);
         this.localSearchFrequency = Math.max(1, localSearchFrequency);
+        this.localSearchStartEvaluations = localSearchStartEvaluations;
         this.localSearch          = localSearch;
         au = new Author("mde", "mde@ears");
         String mdeId = "M" + strategy.label;
@@ -168,6 +196,7 @@ public class MDE extends NumberAlgorithm {
         this.task = task;
         initPopulation();
         int generation = 0;
+        int localSearchActivationGeneration = localSearchStartEvaluations == 0 ? 0 : -1;
         while (!task.isStopCriterion()) {
             NumberSolution<Double> bestIt = bestSolution;
             // =================================================================
@@ -225,10 +254,14 @@ public class MDE extends NumberAlgorithm {
             // =================================================================
             // Local search phase (applied to pold, i.e. the freshly swapped-in generation)
             // =================================================================
-            if (localSearch != null && eliteSize > 0
-                    && generation % localSearchFrequency == 0
-                    && !task.isStopCriterion()) {
-                applyLocalSearch();
+            if (localSearch != null && eliteSize > 0 && !task.isStopCriterion()
+                    && task.getNumberOfEvaluations() >= localSearchStartEvaluations) {
+                if (localSearchActivationGeneration < 0) {
+                    localSearchActivationGeneration = generation;
+                }
+                if ((generation - localSearchActivationGeneration) % localSearchFrequency == 0) {
+                    applyLocalSearch();
+                }
             }
             if (displayData) {
                 System.out.println(task.getNumberOfEvaluations() + " " + bestSolution);
@@ -316,6 +349,7 @@ public class MDE extends NumberAlgorithm {
     public double getCrossoverRate()     { return CR; }
     public int getEliteSize()            { return eliteSize; }
     public int getLocalSearchFrequency() { return localSearchFrequency; }
+    public int getLocalSearchStartEvaluations() { return localSearchStartEvaluations; }
     public LocalSearch getLocalSearch()  { return localSearch; }
     public DE.Strategy getStrategy()     { return strategy; }
     @Override
@@ -337,6 +371,7 @@ public class MDE extends NumberAlgorithm {
             };
             for (int i = 0; i < combos.length && i < maxCombinations; i++) {
                 alternatives.add(new MDE(strategy, combos[i][0], F, CR, combos[i][1], combos[i][2],
+                        localSearchStartEvaluations,
                         new GradientDescentLocalSearch()));
             }
         }

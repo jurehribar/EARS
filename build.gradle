@@ -77,11 +77,18 @@ sourceSets {
     main {
         java {
             srcDir 'src'
+            exclude 'test/**'
         }
         resources {
             srcDirs 'Weight', 'test_data', 'src', 'res'
+            exclude 'test/**'
         }
    }
+    test {
+        java {
+            srcDir 'src/test/java'
+        }
+    }
 }
 
 def mdeExperimentPropertiesFile = file('config.properties')
@@ -114,6 +121,8 @@ def mdeEvaluations = mdeExperimentProps.getProperty('mde.evaluations', '20000').
 def mdeRun = mdeExperimentProps.getProperty('mde.run', 'all').trim()
 def mdeEliteSize = mdeExperimentProps.getProperty('mde.eliteSize', '1').trim()
 def mdeLocalSearchFrequency = mdeExperimentProps.getProperty('mde.localSearchFrequency', '1').trim()
+def mdeLocalSearchStartFE = (findProperty('mdeLocalSearchStartFE')
+        ?: mdeExperimentProps.getProperty('mde.localSearchStartFE', '0')).toString().trim()
 def mdeF = mdeExperimentProps.getProperty('mde.F', '0.5').trim()
 def mdeCR = mdeExperimentProps.getProperty('mde.CR', '0.9').trim()
 
@@ -123,7 +132,8 @@ def runMdeTask = tasks.register('runMdeEEExperiment', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'org.um.feri.ears.experiment.ee.EEExperimentRunner'
     args mdeAlgorithm, mdeHistoryDir, mdeProblem, mdeDimension, mdePopulation,
-            mdeEvaluations, 'K', mdeRun, mdeEliteSize, mdeLocalSearchFrequency, mdeF, mdeCR
+            mdeEvaluations, 'K', mdeRun, mdeEliteSize, mdeLocalSearchFrequency, mdeF, mdeCR,
+            mdeLocalSearchStartFE
 }
 
 def analyzeMdeTask = tasks.register('analyzeMdeEEExperiment', JavaExec) {
@@ -132,7 +142,8 @@ def analyzeMdeTask = tasks.register('analyzeMdeEEExperiment', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'org.um.feri.ears.experiment.ee.EEAnalysisRunner'
     args mdeAlgorithm, mdeHistoryDir, mdeAnalysisDir, mdeProblem, mdeDimension,
-            mdePopulation, mdeEvaluations, 'K', mdeEliteSize, mdeLocalSearchFrequency, mdeF, mdeCR
+            mdePopulation, mdeEvaluations, 'K', mdeEliteSize, mdeLocalSearchFrequency, mdeF, mdeCR,
+            mdeLocalSearchStartFE
     mustRunAfter runMdeTask
 }
 
@@ -153,7 +164,7 @@ def analyzeMdeVsDeTask = tasks.register('analyzeMdeVsDeExperiment', JavaExec) {
     mainClass = 'org.um.feri.ears.experiment.ee.EEAnalysisRunner'
     args '--compare', mdeAlgorithm, deAlgorithm, mdeHistoryDir, mdeAnalysisDir,
             mdeProblem, mdeDimension, mdePopulation, mdeEvaluations, 'K',
-            mdeEliteSize, mdeLocalSearchFrequency, mdeF, mdeCR
+            mdeEliteSize, mdeLocalSearchFrequency, mdeF, mdeCR, mdeLocalSearchStartFE
     mustRunAfter runMdeTask, runDeTask
 }
 
@@ -183,10 +194,10 @@ tasks.register('runAndAnalyzeMdeVsDeExperiment') {
 
 tasks.register('runSOBenchmarkJureH', JavaExec) {
     group = 'MDE experiments'
-    description = 'Run JureHBenchmark using the MDE strategy, elite size, and local-search frequency from config.properties.'
+    description = 'Run JureHBenchmark using the configured MDE strategy and local-search schedule.'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'org.um.feri.ears.examples.SOBenchmarkJureH'
-    args mdeStrategyValue, mdeEliteSize, mdeLocalSearchFrequency
+    args mdeStrategyValue, mdeEliteSize, mdeLocalSearchFrequency, mdeLocalSearchStartFE
 }
 
 configurations {

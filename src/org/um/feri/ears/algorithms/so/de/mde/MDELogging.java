@@ -43,10 +43,25 @@ public class MDELogging extends MDE {
         initLoggingInfo();
     }
 
+    public MDELogging(int popSize, double F, double CR,
+                      int eliteSize, int localSearchFrequency, int localSearchStartEvaluations,
+                      LocalSearch localSearch) {
+        super(popSize, F, CR, eliteSize, localSearchFrequency, localSearchStartEvaluations, localSearch);
+        initLoggingInfo();
+    }
+
     public MDELogging(DE.Strategy strategy, int popSize, double F, double CR,
                       int eliteSize, int localSearchFrequency,
                       LocalSearch localSearch) {
         super(strategy, popSize, F, CR, eliteSize, localSearchFrequency, localSearch);
+        initLoggingInfo();
+    }
+
+    public MDELogging(DE.Strategy strategy, int popSize, double F, double CR,
+                      int eliteSize, int localSearchFrequency, int localSearchStartEvaluations,
+                      LocalSearch localSearch) {
+        super(strategy, popSize, F, CR, eliteSize, localSearchFrequency,
+                localSearchStartEvaluations, localSearch);
         initLoggingInfo();
     }
 
