@@ -370,3 +370,230 @@ rg -n "MDELogging|EEAlgorithm|EEExperimentRunner|EERunAnalyzer" src/org/um/feri/
 
 If Gradle again attempts a network download and the sandbox blocks it, rerun the same compile command with the required approval rather than changing the build.
 
+---
+
+## Codex chat: priprava 4. poglavja poročila (2026-08-06)
+
+Spodaj je prepis uporabniškega pogovora in vsebinskih odgovorov Codexa. Sistemska navodila, klici orodij in dolgi prevajalski izpisi niso vključeni.
+
+### Uporabnik
+
+V poročilo 2
+`/users/jurehribar/My Drive/Faks/Doktorski študij/1. letnik izpiti/INDIVIDUALNO RAZISKOVALNO DELO 1 (55D005)/porocilo_02/porocilo_mde.tex`
+bi za 3. poglavjem dodal novo poglavje 4.
+
+V tem poglavju bom prikazal poizkuse nad MDE z različnimi parametri za začetek lokalnega iskanja (`mde.localSearchStartFE`).
+
+Potem naj bodo podpoglavje 4.1, 4.2 4.3 za vsako nastavitev parametra.
+
+Parametri, ki se ne spreminjajo in so isti pri vseh poizkusih so:
+
+```properties
+mde.problem=Rastrigin
+mde.dimension=10
+mde.population=100
+mde.evaluations=100000
+mde.eliteSize=10
+mde.localSearchFrequency=10
+mde.F=0.5
+mde.CR=0.9
+```
+
+Spreminjajoč paramater je:
+
+```properties
+mde.localSearchStartFE
+```
+
+Vrednosti so: 0, 500, 1000, 2500, 5000, 10000 in 15000.
+
+V direktoriju
+`/users/jurehribar/My Drive/Faks/Doktorski študij/1. letnik izpiti/INDIVIDUALNO RAZISKOVALNO DELO 1 (55D005)/porocilo_02/Data`
+so vsi potrebni podatki.
+
+Imena poddirektorijev nakazujejo nastavitev parametra:
+`LS_start00000`, `LS_start00500`, `LS_start01000`, `LS_start02500`, `LS_start05000`, `LS_start10000`, `LS_start15000`.
+
+Poddirektorij `MDE` pomeni strategijo best, `MDErnd` pa strategijo rand. Grafi se nahajajo v poddirektoriju `MDE/Analysis/series/`, tabele pa v `MDE/Analysis`.
+
+Za vsakega od poizkusov dodaj grafe in tabelo. Za MDE best:
+
+1. Turnirski rating.
+2. Prvo ponovitev R0 grafa `...-window-all-types.png`.
+3. Prvo ponovitev R0 grafa `...-xpl-xpt.png`.
+4. Ustrezno tabelo iz `MDE/Analysis`.
+
+Nato še za MDE rand enake štiri vsebine.
+
+### Codex
+
+Dodano je bilo novo 4. poglavje »Vpliv začetka lokalnega iskanja«:
+
+- 4.1 Eksperimentalne nastavitve,
+- 4.2 Strategija MDE/best/1/bin,
+- 4.3 Strategija MDE/rand/1/bin,
+- vseh sedem vrednosti `localSearchStartFE`,
+- za vsak poskus turnirski rating, oba grafa R0 in ustrezna tabela.
+
+Široke tabele so bile prikazane ležeče in prilagojene širini strani. Poročilo je bilo uspešno prevedeno.
+
+### Uporabnik
+
+Oprosti, zmotil sem se pri 3. točki. Graf naj bo:
+`MDE-best-1-bin-elite10-freq10-startFE0-F0.5-CR0.9_RastriginD10R0P100F100000-window-xpl-xpt`.
+Prosim popravi.
+
+### Codex
+
+Tretji graf je bil pri vseh vrednostih in pri obeh strategijah zamenjan z različico `-window-xpl-xpt.png`. Poročilo je bilo ponovno uspešno prevedeno.
+
+### Uporabnik
+
+Kaj so ugotovitve?
+
+### Codex
+
+Glavne ugotovitve:
+
+- Pri Rastriginovi funkciji je za MDE z mutacijsko strategijo `best` primeren zgodnji začetek lokalnega iskanja. Najboljši povprečni rezultat je bil pri `localSearchStartFE = 1000`: $8,46 \pm 3,96$. Podobno dobra je bila nastavitev 0; pri začetku po 5.000 ali več ovrednotenjih se kakovost poslabša.
+- Pri strategiji `rand` je rezultat obraten: odloženo lokalno iskanje je koristno. Najboljši rezultat je bil pri `localSearchStartFE = 10000`: $6,37 \pm 3,36$. Dobri sta tudi nastavitvi 5.000 in 15.000.
+- MDE-`rand` je pri vseh začetkih dosegel boljši povprečni rezultat kot MDE-`best`.
+- Strategija `best` je že sama močno eksploatacijska. Delež eksploracije ostaja približno 3,5--4,4 odstotka.
+- Pri strategiji `rand` se z odlaganjem lokalnega iskanja delež eksploracije poveča s približno 26,4 na 36,4 odstotka.
+- MDE-`rand` je pri vseh nastavitvah precej boljši od osnovnega DE-`rand`. MDE-`best` izboljša osnovni DE predvsem pri začetkih 0--2.500.
+- Ker je bilo izvedenih samo deset ponovitev in so standardni odkloni veliki, razlik med bližnjimi nastavitvami brez statističnega testa ni mogoče razglasiti za statistično značilne.
+
+### Uporabnik
+
+A lahko vse tabele iz 4. poglavja združiš v eno samo, da bo bolj pregledno? Namesto dolgih imen algoritmov naj bo samo recimo `DE-best-1-bin` ali `MDE-best-1-bin`, `startFE` pa kot stolpec v tabeli, da lahko primerjam vse na enem listu?
+
+### Codex
+
+Vseh 14 posameznih tabel je bilo odstranjenih. Rezultati so bili združeni v eno ležečo tabelo na eni strani, uporabljena so bila kratka imena algoritmov, `startFE` je postal ločen stolpec, stalni parametri niso bili ponovljeni, najboljši skupni rezultat pa je bil poudarjen. Poročilo je bilo ponovno prevedeno.
+
+### Uporabnik
+
+A lahko poravnaš legendo zgoraj, da se ujema? Mogoče so smiselne celo vertikalne linije?
+
+### Codex
+
+Dodana je bila dvonivojska centrirana glava. Stolpci so bili združeni v smiselne skupine in med skupinami so bile dodane tanke navpične ločnice. Tabela je ostala na eni ležeči strani in je bila vizualno preverjena.
+
+### Uporabnik
+
+Lahko pogledaš, zakaj je `DE-rand-1-bin` vedno 100 % v exploraciji? Ni ravno smiselno? Sva kaj pokvarila številke pri združevanju tabele? Ali je napaka kje v algoritmu?
+
+### Codex
+
+Ugotovljeno je bilo, da številke pri združevanju niso bile pokvarjene. `DE-rand-1-bin` ni matematično natanko pri 100 %, temveč med 99,9985 % in 99,9995 %, kar se pri štirih decimalkah zaokroži na 1,0000.
+
+V eni pregledani ponovitvi je bilo:
+
+- 100 začetnih osebkov,
+- 99.899 dogodkov, razvrščenih kot eksploracija,
+- 1 dogodek, razvrščen kot eksploatacija.
+
+Razlaga:
+
+1. Analiza primerja poskusni vektor s ciljnim osebkom `pold[i]`, proti kateremu poteka selekcija.
+2. Pri `DE/rand/1/bin` mutant temelji na naključnem osebku `r1`, ne na ciljnem osebku.
+3. Ker je $CR=0,9$, se v povprečju zamenja približno devet od desetih koordinat.
+4. Rastrigin je močno multimodalen, zato tako različna vektorja skoraj vedno končata v različnih bazenih privlačnosti, kar analiza označi kot eksploracijo.
+
+Ni bilo najdenih znakov napake v implementaciji DE. Opozorjeno pa je bilo, da začetnih 100 osebkov prispeva približno 0,1 odstotne točke k eksploraciji in da MDE v skupni statistiki združuje DE-korake ter notranje korake lokalnega iskanja. Predlagan je bil ločen prikaz XPL/XPT za DE-fazo, lokalno fazo in celoto.
+
+### Uporabnik
+
+Sva rekla samo še, da pri DE kolona `startFE` ne bo parameter, ampak nek znak `--` ali `N/A`.
+
+### Codex
+
+Stolpec `startFE` je bil popravljen tako, da ima številčno vrednost samo pri MDE, pri vseh vrsticah DE pa oznako `--`. Posodobljen je bil tudi opis tabele in preverjen končni izris.
+
+### Uporabnik
+
+Kaj pa je razvidno iz tabele?
+
+### Codex
+
+Iz tabele je bilo povzeto:
+
+- Najboljši skupni rezultat ima `MDE-rand-1-bin` pri `startFE = 10000`: $6,36773 \pm 3,35609$.
+- Pri strategiji `best` je najboljši zgodnejši začetek, `startFE = 1000`: $8,45715 \pm 3,95905$.
+- Pri `rand` se rezultat z odlaganjem lokalnega iskanja večinoma izboljšuje do vrednosti 10.000.
+- `MDE-best-1-bin` ima približno 3,5--4,4 % eksploracije, `MDE-rand-1-bin` pa približno 26--36 %.
+- Pri `MDE-rand` večino raziskovalnih dogodkov predstavlja uspešna zavrnitev (SR), približno 70 %, približno 26 % je FE, približno 2 % pa SE.
+- Pri obeh MDE-strategijah je večina eksploatacijskih dogodkov neuspešnih (UX).
+- Razlik med ponovljenimi vrsticami osnovnega DE se ne sme razlagati kot vpliv `startFE`, saj parameter na DE ne vpliva.
+- Zaradi desetih ponovitev in velikih standardnih odklonov bližnje nastavitve brez statističnega testa niso dokazano različne.
+
+### Uporabnik
+
+Dodajva 4.4 z ugotovitvami, tudi tiste, ki si jih prej napisal.
+
+### Codex
+
+Dodano je bilo podpoglavje 4.4 »Ugotovitve«, ki je vključevalo optimalni nastavitvi, primerjavo MDE z DE, vpliv `startFE`, razmerja XPL/XPT, vrste premikov, razlago skoraj 100-odstotne eksploracije pri DE-rand ter omejitve analize. Poročilo je bilo prevedeno in vizualno preverjeno.
+
+### Uporabnik
+
+Lahko ugotovitve prosim skrajšaš in napišeš kot bullete, saj ta tekst še ni za objavo ali profesorja.
+
+### Codex
+
+Ugotovitve v 4.4 so bile skrajšane na osem preglednih alinej. Ohranili so se bistveni rezultati, razlaga eksploracije in glavne omejitve.
+
+### Uporabnik
+
+Dajva jih kar tukaj pisat brez sprememb LaTeXa. Dodaj še kakšno ugotovitev glede tipa SE, FE, DE, SR, kako je s tem pri DE proti MDE in različnih `startFE`.
+
+### Codex
+
+Predlagane so bile naslednje dodatne ugotovitve:
+
+- Pri strategiji `best` so deleži posameznih tipov eksploracije pri DE in MDE podobni. SE predstavlja približno 15--19 %, FE približno 30--35 %, zavajajoča eksploracija (DE) približno 5--7 %, SR pa približno 43--47 % eksploracijskih dogodkov.
+- Pri `MDE-best-1-bin` sprememba `startFE` ne povzroči jasnega trenda v deležih SE, FE, DE in SR.
+- Pri strategiji `rand` ima MDE znotraj eksploracijskih dogodkov večji delež SE kot osnovni DE: približno 1,7--2,1 % proti približno 0,7--0,8 %.
+- `MDE-rand-1-bin` ima približno 1 % zavajajoče eksploracije, osnovni DE pa približno 0,4 %.
+- Pri `rand` predstavlja SR približno 70--71 % eksploracijskih dogodkov pri MDE in približno 71--72 % pri osnovnem DE.
+- Z večanjem `startFE` se pri `MDE-rand` poveča skupni delež raziskovanja, sestava SE/FE/DE/SR pa ostaja stabilna.
+- Relativnega deleža SE ni dovolj primerjati brez skupnega deleža XPL.
+- Pri `MDE-best` je SX približno 5--8 %, UX pa 92--95 %.
+- Pri `MDE-rand` je SX približno 3--5 % in z večanjem `startFE` večinoma pada, UX pa raste.
+- SX/UX pri `DE-rand` nista zanesljiva za interpretacijo, ker je eksploatacijskih dogodkov skoraj nič.
+- Stolpec `DE` v skupini vrst premikov pomeni »deceptive exploration«, ne algoritma diferencialne evolucije.
+
+### Uporabnik
+
+Samo tele bullete mi daj v dokument. Dobesedno. Ostale daj stran za ugotovitve:
+
+- MDE-best-1-bin ima samo približno 3,5–4,4 % eksploracije.
+- MDE-rand-1-bin ima približno 26–36 % eksploracije.
+- Delež eksploracije pri MDE-rand narašča z odlaganjem lokalnega iskanja.
+- Pri Rastriginovi funkciji je za MDE z mutacijsko strategijo best primeren zgodnji začetek lokalnega iskanja. Najboljši povprečni rezultat je bil dosežen pri localSearchStartFE = 1000. Pri začetku po 5.000 ali več ovrednotenjih se kakovost občutno poslabša.
+- Pri strategiji rand je rezultat obraten: odloženo lokalno iskanje je koristno. Najboljši povprečni rezultat je bil dosežen pri localSearchStartFE = 10000:
+- MDE-rand je pri vseh preizkušenih začetkih dosegel boljši povprečni rezultat kot MDE-best. Največja razlika je vidna pri poznejšem začetku lokalnega iskanja.
+- Pri strategiji rand se z odlaganjem lokalnega iskanja delež eksploracije poveča s približno 26,4 % na 36,4 %. Algoritem tako najprej učinkoviteje razišče prostor, nato pa lokalno iskanje izboljša najobetavnejše rešitve.
+- Pri strategiji rand ima MDE znotraj eksploracijskih dogodkov večji delež uspešne eksploracije kot osnovni DE. Pri MDE je SE približno 1,7–2,1 %, pri osnovnem DE pa samo približno 0,7–0,8 %.
+- MDE-rand-1-bin ima tudi nekoliko več zavajajoče eksploracije: približno 1 % v primerjavi s približno 0,4 % pri osnovnem DE. To pomeni, da lokalno iskanje poveča delež prehodov, ki trenutno izboljšajo rešitev, vendar vodijo v slabši bazen privlačnosti.
+- Pri MDE-best-1-bin je uspešnih samo približno 5–8 % eksploatacijskih premikov (SX), preostalih 92–95 % pa predstavlja neuspešno eksploatacijo (UX). Lokalno iskanje torej izvede veliko poskusov v istem bazenu, vendar le manjši delež neposredno izboljša rešitev.
+- Pri MDE-rand-1-bin je delež uspešne eksploatacije še manjši, približno 3–5 %. Z večanjem startFE se SX večinoma zmanjšuje, UX pa povečuje. Kljub temu se končni rezultat izboljšuje, kar kaže, da je pomembnejša kakovost območja, v katerem se lokalno iskanje začne, in ne samo delež uspešnih lokalnih korakov.
+
+### Codex
+
+V 4.4 so bile odstranjene vse prejšnje alineje in nadomeščene samo z uporabnikovimi enajstimi alinejami. Zaradi LaTeXa so bili znaki `%` ubežani, razponi pa zapisani z `--`; prikazana vsebina je ostala enaka. Poročilo je bilo uspešno prevedeno in vizualno preverjeno.
+
+### Uporabnik
+
+Dodaj tale cel chat v `CODEX_HANDOFF.md`.
+
+### Trenutno stanje poročila po pogovoru
+
+- Izvor: `/Users/jurehribar/My Drive/Faks/Doktorski študij/1. letnik izpiti/INDIVIDUALNO RAZISKOVALNO DELO 1 (55D005)/porocilo_02/porocilo_mde.tex`
+- PDF: `/Users/jurehribar/My Drive/Faks/Doktorski študij/1. letnik izpiti/INDIVIDUALNO RAZISKOVALNO DELO 1 (55D005)/porocilo_02/porocilo_mde.pdf`
+- Delovna kopija v repozitoriju: `porocilo_mde.working.tex`
+- Poglavje 4 vsebuje 4.1 nastavitve, 4.2 MDE-best, 4.3 MDE-rand in 4.4 ugotovitve.
+- Vključeni so rating, `window-all-types` in `window-xpl-xpt` grafi za vseh sedem vrednosti ter obe strategiji.
+- Vse tabele so združene v eno ležečo tabelo.
+- Vrstice DE imajo v stolpcu `startFE` oznako `--`.
+- Zadnja uspešna kompilacija je ustvarila 38-stranski PDF.
