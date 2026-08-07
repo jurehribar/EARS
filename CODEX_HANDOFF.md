@@ -597,3 +597,193 @@ Dodaj tale cel chat v `CODEX_HANDOFF.md`.
 - Vse tabele so združene v eno ležečo tabelo.
 - Vrstice DE imajo v stolpcu `startFE` oznako `--`.
 - Zadnja uspešna kompilacija je ustvarila 38-stranski PDF.
+
+---
+
+## Codex work: Ackley comparison and report Chapter 5 (2026-08-07)
+
+### Scope completed today
+
+Today’s work was limited to analysis of the existing Ackley experiment data and editing the LaTeX report. No Java source code or experiment implementation was changed.
+
+The analyzed fixed configuration was:
+
+```properties
+mde.problem=Ackley
+mde.dimension=10
+mde.population=50
+mde.evaluations=25000
+mde.eliteSize=3
+mde.localSearchFrequency=5
+mde.localSearchStartFE=5000
+mde.F=0.5
+mde.CR=0.9
+```
+
+Algorithms compared:
+
+- `MDE-rand-1-bin-elite3-freq5-startFE5000-F0.5-CR0.9`
+- `DE-rand-1-binOldNew`
+
+There were 10 independent runs per algorithm.
+
+### Ackley local-search-start comparison
+
+The new `localSearchStartFE=2500` run was compared with starts 1000, 5000, 10000, and 15000 for the same Ackley/MDE configuration.
+
+Median FEs needed to reach selected targets were:
+
+| startFE | $10^{-7}$ | $10^{-10}$ | $10^{-12}$ | $10^{-14}$ |
+|---:|---:|---:|---:|---:|
+| 1000 | 7885.5 | 9141 | 10208.5 | 11338 |
+| 2500 | 4194 | 5940 | 7082 | 8238 |
+| 5000 | 6248.5 | 7789 | 9160 | 10531 |
+| 10000 | 11198 | 12851 | 14224 | 15620 |
+| 15000 | 15266 | 16768.5 | 18139.5 | 19512.5 |
+
+Interpretation:
+
+- Start 2500 had the best median convergence speed.
+- It was less reliable than start 5000. For target $10^{-7}$ its run range was 3665–13462 FEs, compared with 5865–6374 for start 5000.
+- A random start-2500 run beat a random start-5000 run about 70% of the time, but the exact rank comparison with only 10 runs per group gave approximately $p=0.143$, so superiority over start 5000 was not conclusive.
+- Start 5000 remained the most consistent setting.
+- Recommended future check: starts 2500, 3750, and 5000 with at least 30 runs and matched seeds if possible.
+
+### DE versus MDE conclusion for `Ackley_E03_F05_P050_LSS05000`
+
+The algorithms behaved comparably before the MDE local-search gate:
+
+- FE 1000: MDE median 13.8209, DE median 13.8398.
+- FE 2500: MDE median 5.4150, DE median 5.6577.
+- FE 5000: MDE median 0.8312, DE median 0.7666.
+
+Immediately after local search became active, MDE improved sharply:
+
+- FE 5100: MDE median 0.0068248, DE median 0.6473.
+- FE 6000: MDE median $2.7287\times10^{-7}$, DE median 0.1700.
+- FE 10000: MDE median $9.4591\times10^{-14}$, DE median 0.0023282.
+- FE 25000: MDE median $3.9968\times10^{-15}$, DE median $9.1195\times10^{-10}$.
+
+All 10 MDE runs reached $10^{-14}$, with median hitting time 10531 FEs. No DE run reached $10^{-10}$ within 25000 FEs. All MDE final results were better than all DE final results.
+
+Exploration/exploitation summaries:
+
+- MDE XPL/XPT: 0.186856 / 0.813144.
+- DE XPL/XPT: 0.182688 / 0.817312.
+- MDE SX/UX: 0.079970 / 0.920030.
+- DE SX/UX: 0.274925 / 0.725075.
+- SE, FE, deceptive exploration, and successful rejection proportions were very similar between algorithms.
+
+Main interpretation: MDE did not win by spending a larger fraction of evaluations in exploitation. Instead, the local-search evaluations immediately after FE 5000 produced much larger objective improvements. The low later SX ratio for MDE is consistent with a population already extremely close to the optimum, where further improvements are rare.
+
+This conclusion is limited to Ackley, $D=10$, population 50, the listed MDE settings, and 10 runs.
+
+### New Chapter 5 in the LaTeX report
+
+Current Windows report source:
+
+```text
+C:\Users\JureHribar\My Drive\Faks\Doktorski študij\1. letnik izpiti\IRD 1\porocilo_02\porocilo_mde.tex
+```
+
+Copied experiment data:
+
+```text
+C:\Users\JureHribar\My Drive\Faks\Doktorski študij\1. letnik izpiti\IRD 1\porocilo_02\Data\Ackley_E03_F05_P050_LSS05000
+```
+
+A new section was inserted immediately before the previous `\section{Razprava}`, so it is Chapter/Section 5:
+
+```latex
+\section{Primerjava MDE in DE na Ackleyjevi funkciji}
+```
+
+Only this new chapter was added. It contains:
+
+1. A table of experiment settings.
+2. MDE R0 `window-all-types` and `window-xpl-xpt` figures.
+3. DE R0 `window-all-types` and `window-xpl-xpt` figures.
+4. Table 5 with aggregate E/E metrics and final fitness.
+5. Table 6 with convergence values at selected FE checkpoints.
+6. Seven short findings.
+
+All image paths are relative to the report and start with:
+
+```text
+Data/Ackley_E03_F05_P050_LSS05000/...
+```
+
+This was done intentionally so the document continues to work when moved back to macOS. All four referenced Ackley image files were verified to exist.
+
+There is no tournament-rating image in the copied Ackley folder, so no rating figure was added.
+
+### Table 5 calculation
+
+Table 5 is `tab:ackley-ee-rezultati`. It does not contain medians. For every metric, EARS first calculates one value per run, then reports the arithmetic mean and sample standard deviation over 10 runs:
+
+```text
+mean = sum(x_r) / n
+sample stdev = sqrt(sum((x_r - mean)^2) / (n - 1))
+```
+
+The implementation is in:
+
+- `src/org/um/feri/ears/experiment/ee/MetricAccumulator.java`
+- `src/org/um/feri/ears/experiment/ee/EEMetrics.java`
+
+SE/FE/DE/SR are normalized within exploration events, SX/UX within exploitation events, XPL/XPT over overall search behavior, and Best is the best fitness in each run before aggregation.
+
+### Final form of Table 6
+
+Table 6 is `tab:ackley-konvergenca`.
+
+It initially contained medians and exact rank-test p-values. At the user's request it was changed to arithmetic mean ± sample standard deviation, and the p-value column was then removed completely. Chapter 5 now contains no p-values or p-value claims.
+
+For each run $r$ and checkpoint $t$, the input value is the best objective observed up to that checkpoint:
+
+```text
+b_r(t) = min(f_r,1, ..., f_r,t)
+```
+
+The displayed mean and sample standard deviation are calculated across the 10 values $b_r(t)$.
+
+Current Table 6 values:
+
+| FEs | MDE mean ± sample SD | DE mean ± sample SD |
+|---:|---:|---:|
+| 1000 | 13.7788 ± 2.0212 | 13.6879 ± 1.0885 |
+| 2500 | 5.4950 ± 1.0878 | 5.5501 ± 0.6156 |
+| 5000 | 0.9136 ± 0.4795 | 0.7506 ± 0.1859 |
+| 5100 | 0.01093 ± 0.01047 | 0.6764 ± 0.1984 |
+| 6000 | $(5.2149 ± 6.3795)\times10^{-7}$ | 0.2026 ± 0.0945 |
+| 10000 | $(1.6778 ± 1.9490)\times10^{-13}$ | $(2.5953 ± 0.8537)\times10^{-3}$ |
+| 25000 | $(2.9310 ± 1.7161)\times10^{-15}$ | $(9.5240 ± 4.8370)\times10^{-10}$ |
+
+The two findings that previously referred to medians and p-values were updated to use means and no p-values.
+
+### Temporary Chapter 4 workaround
+
+Compilation exposed an unrelated pre-existing missing-data problem in Chapter 4. The directory below is absent:
+
+```text
+Data/LS_start00500/MDE
+```
+
+`Data/LS_start00500` contains only `MDErnd` and `rating.png`; every other `LS_start*` directory contains both `MDE` and `MDErnd`. No copy of the missing MDE-best/startFE500 data was found in `C:\dev\TestEARS`, `C:\dev\EARS`, or the searched Google Drive directories.
+
+The following call in `porocilo_mde.tex` was therefore temporarily commented out, exactly as requested:
+
+```latex
+% Začasno izključeno: manjka imenik Data/LS_start00500/MDE.
+% \LSExperiment{LS_start00500}{500}{best}{MDE}{rating.png}
+```
+
+Restore the missing directory and uncomment the call when the data becomes available.
+
+### Verification and remaining limitation
+
+- Four Ackley figure paths were verified to exist.
+- The added Chapter 5 contains 4 figures, 3 tables, and 7 findings.
+- LaTeX `begin`/`end` environments in the added chapter were counted and balanced.
+- No absolute Windows image paths occur in Chapter 5.
+- `pdflatex`, `latexmk`, and `tectonic` were not installed or available through `PATH` on this Windows machine, so Codex could not regenerate or visually inspect the final PDF locally.
