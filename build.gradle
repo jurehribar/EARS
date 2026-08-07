@@ -194,10 +194,11 @@ tasks.register('runAndAnalyzeMdeVsDeExperiment') {
 
 tasks.register('runSOBenchmarkJureH', JavaExec) {
     group = 'MDE experiments'
-    description = 'Run JureHBenchmark using the configured MDE strategy and local-search schedule.'
+    description = 'Run JureHBenchmark using the configured problem, budget, DE parameters, and local-search schedule.'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'org.um.feri.ears.examples.SOBenchmarkJureH'
-    args mdeStrategyValue, mdeEliteSize, mdeLocalSearchFrequency, mdeLocalSearchStartFE
+    args mdeStrategyValue, mdeEliteSize, mdeLocalSearchFrequency, mdeLocalSearchStartFE,
+            mdeProblem, mdeDimension, mdeEvaluations, mdePopulation, mdeF, mdeCR
 }
 
 configurations {

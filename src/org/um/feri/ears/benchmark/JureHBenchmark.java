@@ -5,15 +5,25 @@ import org.um.feri.ears.problems.DoubleProblem;
 import org.um.feri.ears.problems.NumberSolution;
 import org.um.feri.ears.problems.StopCriterion;
 import org.um.feri.ears.problems.Task;
-import org.um.feri.ears.problems.constrained.*;
-import org.um.feri.ears.problems.unconstrained.*;
 
 public class JureHBenchmark extends SOBenchmark<NumberSolution<Double>, NumberSolution<Double>, DoubleProblem, NumberAlgorithm> {
-    public JureHBenchmark() {
+    private final DoubleProblem problem;
+
+    public JureHBenchmark(DoubleProblem problem, int maxEvaluations) {
         super();
+        if (problem == null) {
+            throw new IllegalArgumentException("Problem must not be null");
+        }
+        if (maxEvaluations < 1) {
+            throw new IllegalArgumentException("Maximum evaluations must be positive");
+        }
+        this.problem = problem;
+        this.maxEvaluations = maxEvaluations;
         name = "Homework assignment";
         shortName = "JureH";
-        info = "Number of tests 2 \n Most dimensions=10\n Compare if difference<=E-10 is tie.";
+        info = "Problem=" + problem.getName()
+                + ", dimensions=" + problem.getNumberOfDimensions()
+                + ", maximum evaluations=" + maxEvaluations;
     }
 
     @Override
@@ -23,7 +33,7 @@ public class JureHBenchmark extends SOBenchmark<NumberSolution<Double>, NumberSo
 
     @Override
     public void initAllProblems() {
-        addTask(new Rastrigin(10), stopCriterion, 100000, 0, maxIterations);
+        addTask(problem, stopCriterion, maxEvaluations, 0, maxIterations);
         //addTask(new Schwefel226(10), stopCriterion, 200000, 0, maxIterations);
         //addTask(new Griewank(10), stopCriterion, 200000, 0, maxIterations);
 
